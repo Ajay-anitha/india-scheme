@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏛️</text></svg>" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Government Scheme Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Fallback React & Babel for browser standalone execution -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <link rel="stylesheet" href="/src/index.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <!-- Dual Mode Loader: Vite module when served via Vite, standalone Babel script when opened directly -->
+    <script type="module" src="/src/main.jsx"></script>
+
+    <script type="text/babel">
+      // Standalone browser fallback script if Vite dev server is not active
+      if (!window.__vite_plugin_react_preamble_installed__ && !window.ReactAppLoaded) {
+        window.ReactAppLoaded = true;
+
+        const API_BASE = "http://localhost:8000";
+
+        function StandaloneApp() {
+          const [activeTab, setActiveTab] = React.useState('home');
+          const [schemes, setSchemes] = React.useState([]);
+          const [loading, setLoading] = React.useState(true);
+          const [error, setError] = React.useState(null);
+          const [searchQuery, setSearchQuery] = React.useState('');
+          const [eligibilityResults, setEligibilityResults] = React.useState([]);
+          const [filterCriteria, setFilterCriteria] = React.useState({});
+          
+          // Chat state
+          const [chatMsgs, setChatMsgs] = React.useState([
+            { sender: 'assistant', text: 'Namaste! 🙏 I am your AI Government Scheme Assistant. Ask me anything about Indian government schemes, eligibility criteria, benefits, or application procedures!' }
+          ]);
+          const [chatInput, setChatInput] = React.useState('');
+          const [chatLoading, setChatLoading] = React.useState(false);
+          const [isRecording, setIsRecording] = React.useState(false);
+
+          // Speech Recognition setup
+          const recognitionRef = React.useRef(null);
+          React.useEffect(() => {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+              const rec = new SpeechRecognition();
+              rec.continuous = false;
+              rec.interimResults = true;
+              rec.lang = 'en-IN';
+              rec.onresult = (e) => {
+                const text = Array.from(e.results).map(r => r[0].transcript).join('');
+                setChatInput(text);
+              };
+              rec.onend = () => setIsRecording(false);
+              recognitionRef.current = rec;
+            }
+          }, []);
+
+          const toggleMic = () => {
+            if (!recognitionRef.current) {
+              alert("Web Speech API is not supported in this browser. Try Chrome/Edge/Safari.");
+              return;
+            }
+            if (isRecording) {
+              recognitionRef.current.stop();
+              setIsRecording(false);
+            } else {
+              recognitionRef.current.start();
+              setIsRecording(true);
+            }
+          };
+
+          const fetchSchemesList = async (q = '') => {
+            setLoading(true);
+            setError(null);
+            try {
+              const url = q ? `${API_BASE}/schemes?q=${encodeURIComponent(q)}` : `${API_BASE}/schemes`;
+              const res = await fetch(url);
+              if (!res.ok) throw new Error("Backend offline");
+              const data = await res.json();
+              setSchemes(data.schemes || []);
+            } catch (err) {
+              setError("FastAPI Backend server is offline or unreachable at " + API_BASE + ". Please start FastAPI backend: uvicorn main:app --reload");
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          React.useEffect(() => {
+            fetchSchemesList();
+          }, []);
+
+          const handleEligibilitySubmit = async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const payload = {
+              age: form.age.value ? parseInt(form.age.value, 10) : null,
+              gender: form.gender.value,
+              state: form.state.value,
+              occupation: form.occupation.value,
+              annual_income: form.annual_income.value ? parseInt(form.annual_income.value, 10) : null,
+              category: form.category.value
+            };
+            try {
+              const res = await fetch(`${API_BASE}/eligibility`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+              });
+              const data = await res.json();
+              setEligibilityResults(data.schemes || []);
+              setFilterCriteria(payload);
+              setActiveTab('results');
+            } catch (err) {
+              alert("Failed to check eligibility. Make sure FastAPI backend is running!");
+            }
+          };
+
+          const handleSendChat = async (e) => {
+            e.preventDefault();
+            if (!chatInput.trim() || chatLoading) return;
+            const text = chatInput.trim();
+            setChatMsgs(prev => [...prev, { sender: 'user', text }]);
+            setChatInput('');
+            setChatLoading(true);
+            try {
+              const res = await fetch(`${API_BASE}/chat`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text })
+              });
+              const data = await res.json();
+              setChatMsgs(prev => [...prev, { sender: 'assistant', text: data.reply }]);
+            } catch (err) {
+              setChatMsgs(prev => [...prev, { sender: 'assistant', text: 'Error connecting to FastAPI backend.' }]);
+            } finally {
+              setChatLoading(false);
+            }
+          };
+
+          return (
+            <div className="app-container">
+              {/* Navbar */}
+              <header className="navbar">
+                <div className="nav-content">
+                  <div className="logo" onClick={() => setActiveTab('home')}>
+                    <span>🏛️ SchemeAI</span>
+                    <span className="logo-badge">Gov Assistant</span>
+                  </div>
+                  <nav className="nav-links">
+                    <button className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>
+                      🏠 Home & Schemes
+                    </button>
+                    <button className={`nav-item ${activeTab === 'eligibility' ? 'active' : ''}`} onClick={() => setActiveTab('eligibility')}>
+                      📋 Eligibility Check
+                    </button>
+                    <button className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
+                      💬 AI Assistant
+                    </button>
+                  </nav>
+                </div>
+              </header>
+
+              {/* HOME TAB */}
+              {activeTab === 'home' && (
+                <div>
+                  <section className="hero">
+                    <div className="hero-inner">
+                      <h1 className="hero-title">AI Government Scheme Assistant</h1>
+                      <p className="hero-subtitle">Discover eligible schemes, check your qualifications, and ask questions to our AI chatbot.</p>
+                      <div className="hero-actions">
+                        <button className="btn btn-accent" onClick={() => setActiveTab('eligibility')}>📋 Check Your Eligibility</button>
+                        <button className="btn btn-outline" onClick={() => setActiveTab('chat')}>💬 Ask AI Assistant</button>
+                      </div>
+                    </div>
+                  </section>
+
+                  <main className="main-content">
+                    <div className="search-section">
+                      <div className="search-box">
+                        <input
+                          type="text"
+                          className="search-input"
+                          placeholder="Search schemes by name or keyword (e.g. Kisan, Health, Loan)..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && fetchSchemesList(searchQuery)}
+                        />
+                        <button className="btn btn-primary" onClick={() => fetchSchemesList(searchQuery)}>🔍 Search</button>
+                      </div>
+                      <div className="category-chips">
+                        {["All", "Agriculture", "Health", "Finance", "Women & Child", "Housing", "Vendors"].map(cat => (
+                          <button key={cat} className="chip" onClick={() => { setSearchQuery(cat === "All" ? "" : cat); fetchSchemesList(cat === "All" ? "" : cat); }}>
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {error && <div className="alert-error">⚠️ {error}</div>}
+
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '1rem' }}>Government Schemes ({schemes.length})</h2>
+
+                    {loading ? (
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading schemes...</div>
+                    ) : (
+                      <div className="schemes-grid">
+                        {schemes.map(s => (
+                          <div key={s.id} className="scheme-card">
+                            <div>
+                              <div className="scheme-header">
+                                <div className="scheme-ministry">{s.ministry}</div>
+                                <h3 className="scheme-title">{s.scheme_name}</h3>
+                                <span className="scheme-badge">📍 {s.state}</span>
+                              </div>
+                              <div className="scheme-body">
+                                <div className="scheme-section">
+                                  <div className="scheme-section-title">💡 Benefits:</div>
+                                  <p>{s.benefits}</p>
+                                </div>
+                                <div className="scheme-section">
+                                  <div className="scheme-section-title">📋 Eligibility:</div>
+                                  <p>{s.eligibility}</p>
+                                </div>
+                                <div className="scheme-section" style={{ marginTop: '0.5rem' }}>
+                                  <div className="scheme-section-title">📄 Required Documents:</div>
+                                  <p>{s.required_documents}</p>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="scheme-footer">
+                              <a href={s.apply_link} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.82rem' }}>
+                                Apply Online 🔗
+                              </a>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </main>
+                </div>
+              )}
+
+              {/* ELIGIBILITY TAB */}
+              {activeTab === 'eligibility' && (
+                <div className="main-content">
+                  <div className="form-container">
+                    <h2 className="form-title">Check Scheme Eligibility</h2>
+                    <p className="form-subtitle">Fill in your details below to find schemes you qualify for.</p>
+                    <form onSubmit={handleEligibilitySubmit}>
+                      <div className="form-grid">
+                        <div className="form-group">
+                          <label className="form-label">Age (Years)</label>
+                          <input type="number" name="age" className="form-input" placeholder="e.g. 28" />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Gender</label>
+                          <select name="gender" className="form-select">
+                            <option value="All">All / Male & Female</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">State</label>
+                          <select name="state" className="form-select">
+                            <option value="All India">All India</option>
+                            <option value="Maharashtra">Maharashtra</option>
+                            <option value="Uttar Pradesh">Uttar Pradesh</option>
+                            <option value="Delhi">Delhi</option>
+                            <option value="Karnataka">Karnataka</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Occupation</label>
+                          <select name="occupation" className="form-select">
+                            <option value="All">All / Any</option>
+                            <option value="Farmer">Farmer</option>
+                            <option value="Student">Student</option>
+                            <option value="Entrepreneur">Entrepreneur</option>
+                            <option value="Vendor">Vendor</option>
+                            <option value="Unemployed">Unemployed</option>
+                          </select>
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Annual Income (₹)</label>
+                          <input type="number" name="annual_income" className="form-input" placeholder="e.g. 150000" />
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label">Category</label>
+                          <select name="category" className="form-select">
+                            <option value="All">All</option>
+                            <option value="General">General</option>
+                            <option value="OBC">OBC</option>
+                            <option value="SC">SC</option>
+                            <option value="ST">ST</option>
+                            <option value="EWS">EWS</option>
+                          </select>
+                        </div>
+                        <div className="form-group full-width" style={{ marginTop: '1rem' }}>
+                          <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
+                            Find Eligible Schemes 🔍
+                          </button>
+                        </div>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* RESULTS TAB */}
+              {activeTab === 'results' && (
+                <div className="main-content">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h2>Eligible Schemes ({eligibilityResults.length})</h2>
+                    <button className="btn btn-secondary" onClick={() => setActiveTab('eligibility')}>✏️ Modify Criteria</button>
+                  </div>
+                  {eligibilityResults.length === 0 ? (
+                    <div style={{ padding: '2rem', background: 'white', borderRadius: '12px', textAlign: 'center' }}>No matching schemes found.</div>
+                  ) : (
+                    <div className="schemes-grid">
+                      {eligibilityResults.map(s => (
+                        <div key={s.id} className="scheme-card">
+                          <div className="scheme-header">
+                            <div className="scheme-ministry">{s.ministry}</div>
+                            <h3 className="scheme-title">{s.scheme_name}</h3>
+                            <span className="scheme-badge">📍 {s.state}</span>
+                          </div>
+                          <div className="scheme-body">
+                            <div className="scheme-section"><div className="scheme-section-title">💡 Benefits:</div><p>{s.benefits}</p></div>
+                            <div className="scheme-section"><div className="scheme-section-title">📋 Eligibility:</div><p>{s.eligibility}</p></div>
+                            <div className="scheme-section"><div className="scheme-section-title">📄 Required Documents:</div><p>{s.required_documents}</p></div>
+                          </div>
+                          <div className="scheme-footer">
+                            <a href={s.apply_link} target="_blank" rel="noreferrer" className="btn btn-primary">Apply Online 🔗</a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* CHAT TAB */}
+              {activeTab === 'chat' && (
+                <div className="main-content">
+                  <div className="chat-wrapper">
+                    <div className="chat-header">
+                      <div style={{ fontSize: '1.8rem' }}>🤖</div>
+                      <div className="chat-header-info">
+                        <h3>AI Scheme Assistant</h3>
+                        <p>Online • Web Speech Voice Input Enabled</p>
+                      </div>
+                    </div>
+                    {isRecording && <div className="voice-status">🎙️ Listening to your voice... Speak now!</div>}
+                    <div className="chat-messages">
+                      {chatMsgs.map((m, idx) => (
+                        <div key={idx} className={`message-bubble ${m.sender === 'user' ? 'message-user' : 'message-assistant'}`}>
+                          {m.text}
+                        </div>
+                      ))}
+                      {chatLoading && <div className="message-bubble message-assistant">Thinking...</div>}
+                    </div>
+                    <form onSubmit={handleSendChat} className="chat-input-area">
+                      <input
+                        type="text"
+                        className="chat-input"
+                        placeholder="Type or speak your question..."
+                        value={chatInput}
+                        onChange={(e) => setChatInput(e.target.value)}
+                      />
+                      <button type="button" className={`btn-mic ${isRecording ? 'recording' : ''}`} onClick={toggleMic}>
+                        {isRecording ? '🛑 Stop' : '🎙️ Mic'}
+                      </button>
+                      <button type="submit" className="btn btn-primary" disabled={!chatInput.trim() || chatLoading}>Send 📤</button>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              <footer className="footer">
+                <p><strong>AI Government Scheme Assistant MVP</strong></p>
+              </footer>
+            </div>
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<StandaloneApp />);
+      }
+    </script>
+  </body>
+</html>
