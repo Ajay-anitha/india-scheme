@@ -4,6 +4,8 @@
   "private": true,
   "description": "AI Government Scheme Assistant MVP",
   "scripts": {
+    "backend": "python backend/main.py",
+    "frontend": "npm --prefix frontend run dev",
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build"
   },

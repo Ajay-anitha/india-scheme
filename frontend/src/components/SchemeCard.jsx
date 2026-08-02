@@ -1,87 +1,125 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import SchemeDetailsModal from './SchemeDetailsModal';
+import { CATEGORY_MAP } from '../data/categoryData';
 
 /**
- * Scheme card with Apply and Learn More actions.
- * Props: scheme, accentColor, accentBg
+ * SchemeCard Component:
+ * - Scheme Image (Category artwork)
+ * - Scheme Name & Ministry (Clickable to /scheme/:id)
+ * - Benefits preview
+ * - View Details button (Navigates to dedicated /scheme/:id page)
+ * - Apply Now button (Direct official portal link)
  */
-export default function SchemeCard({ scheme, accentColor = '#1e3a8a', accentBg = '#eff6ff' }) {
+export default function SchemeCard({ scheme }) {
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
-  // Truncate long text
-  const truncate = (text, len = 100) =>
-    text && text.length > len ? text.slice(0, len).trimEnd() + '…' : text || '—';
+  // Match category slug for image selection
+  const catKey = (scheme.category || '').toLowerCase();
+  let imageSrc = '/images/hero-bg.png';
+  if (catKey.includes('agri')) imageSrc = CATEGORY_MAP.agriculture.image;
+  else if (catKey.includes('edu') || catKey.includes('scholar')) imageSrc = CATEGORY_MAP.education.image;
+  else if (catKey.includes('health') || catKey.includes('med')) imageSrc = CATEGORY_MAP.health.image;
+  else if (catKey.includes('hous')) imageSrc = CATEGORY_MAP.housing.image;
+  else if (catKey.includes('women') || catKey.includes('child')) imageSrc = CATEGORY_MAP.women.image;
+  else if (catKey.includes('employ') || catKey.includes('skill')) imageSrc = CATEGORY_MAP.employment.image;
+  else if (catKey.includes('stud')) imageSrc = CATEGORY_MAP.student.image;
+  else if (catKey.includes('seni') || catKey.includes('pension')) imageSrc = CATEGORY_MAP['senior-citizen'].image;
+
+  const truncate = (text, maxLen = 100) => {
+    if (!text) return '—';
+    return text.length > maxLen ? text.slice(0, maxLen).trimEnd() + '…' : text;
+  };
 
   return (
     <>
-      <article className="scheme-card">
-        {/* Top accent bar */}
-        <div className="h-1 w-full" style={{ background: accentColor }} />
+      <article className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col overflow-hidden group">
+        {/* Scheme Image Thumbnail Header */}
+        <Link to={`/scheme/${scheme.id}`} className="relative h-40 w-full overflow-hidden bg-slate-900 block">
+          <img
+            src={imageSrc}
+            alt={scheme.scheme_name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 opacity-90"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/20 to-transparent" />
 
-        <div className="p-5 flex flex-col flex-1">
-          {/* Header */}
-          <div className="flex items-start justify-between gap-2 mb-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-slate-800 text-base leading-snug mb-1 line-clamp-2">
-                {scheme.scheme_name}
-              </h3>
-              <p className="text-xs text-slate-400 font-medium">{scheme.ministry}</p>
-            </div>
-            {/* State badge */}
-            <span className="shrink-0 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+          {/* Badges Overlay */}
+          <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+            <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-white/95 text-[#1e3a8a] border border-white/40 shadow-xs uppercase tracking-wider">
+              🏛️ {scheme.category || 'General'}
+            </span>
+            <span className="text-[11px] font-bold text-white bg-slate-900/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">
               📍 {scheme.state || 'All India'}
             </span>
           </div>
+        </Link>
 
-          {/* Category tag */}
-          <span
-            className="inline-block mb-3 text-xs font-bold px-2.5 py-0.5 rounded-full self-start"
-            style={{ background: accentBg, color: accentColor }}
+        {/* Card Body */}
+        <div className="p-5 flex flex-col flex-1">
+          {/* Scheme Title */}
+          <h3
+            onClick={() => navigate(`/scheme/${scheme.id}`)}
+            className="font-extrabold text-slate-900 text-base sm:text-lg leading-snug mb-1 group-hover:text-[#1e3a8a] transition-colors line-clamp-2 cursor-pointer"
+            style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}
           >
-            {scheme.occupation !== 'All' ? `👤 ${scheme.occupation}` : '🏛️ General'}
-          </span>
+            {scheme.scheme_name}
+          </h3>
 
-          {/* Info rows */}
-          <div className="space-y-2 flex-1">
-            <div className="info-row">
-              <span className="shrink-0 font-semibold text-slate-700 w-20">Benefits:</span>
-              <span className="text-slate-500">{truncate(scheme.benefits)}</span>
+          {/* Ministry Sub-heading */}
+          <p className="text-xs font-semibold text-slate-400 mb-4 line-clamp-1">
+            {scheme.ministry}
+          </p>
+
+          {/* Key Benefits Preview */}
+          <div className="bg-slate-50 rounded-xl p-3 border border-slate-100 mb-5 flex-1">
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <span className="text-emerald-600">💡</span> Key Benefits
             </div>
-            <div className="info-row">
-              <span className="shrink-0 font-semibold text-slate-700 w-20">Eligibility:</span>
-              <span className="text-slate-500">{truncate(scheme.eligibility)}</span>
-            </div>
+            <p className="text-slate-700 text-xs sm:text-sm leading-relaxed">
+              {truncate(scheme.benefits)}
+            </p>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
-            {scheme.apply_link && (
+          {/* Action Buttons: View Details & Apply Now */}
+          <div className="grid grid-cols-2 gap-2 mt-auto pt-3 border-t border-slate-100">
+            <Link
+              to={`/scheme/${scheme.id}`}
+              className="w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold text-[#1e3a8a] bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors flex items-center justify-center gap-1 text-center"
+            >
+              <span>View Details</span>
+            </Link>
+
+            {scheme.apply_link ? (
               <a
                 href={scheme.apply_link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-all duration-150 hover:brightness-90"
-                style={{ background: accentColor }}
+                className="w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#047857] hover:bg-[#065f46] shadow-sm transition-colors flex items-center justify-center gap-1 text-center"
               >
-                Apply Online
+                <span>Apply Now</span>
+                <span className="text-xs">↗</span>
               </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowModal(true)}
+                className="w-full py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold text-white bg-[#1e3a8a] hover:bg-[#1e40af] transition-colors"
+              >
+                <span>Apply Info</span>
+              </button>
             )}
-            <button
-              onClick={() => setShowModal(true)}
-              className="flex-1 py-2.5 rounded-lg text-sm font-semibold border-2 transition-all duration-150 hover:bg-slate-50"
-              style={{ color: accentColor, borderColor: accentColor }}
-            >
-              Learn More
-            </button>
           </div>
         </div>
       </article>
 
+      {/* Scheme Details Modal */}
       {showModal && (
         <SchemeDetailsModal
           scheme={scheme}
-          accentColor={accentColor}
-          accentBg={accentBg}
+          accentColor="#1e3a8a"
+          accentBg="#eff6ff"
           onClose={() => setShowModal(false)}
         />
       )}

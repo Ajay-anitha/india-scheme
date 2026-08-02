@@ -2,9 +2,9 @@ import sqlite3
 import os
 import json
 try:
-    from backend.database import DB_PATH, init_db, get_db_connection
+    from backend.database import get_db_path, init_db, get_db_connection
 except ImportError:
-    from database import DB_PATH, init_db, get_db_connection
+    from database import get_db_path, init_db, get_db_connection
 
 SCHEMES_JSON_PATH = os.path.join(os.path.dirname(__file__), "schemes.json")
 
@@ -23,10 +23,12 @@ def seed_database():
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    schemes_data = load_schemes_from_json()
+    
     seeded_count = 0
     updated_count = 0
     
-    for s in SAMPLE_SCHEMES:
+    for s in schemes_data:
         cursor.execute("SELECT id FROM schemes WHERE scheme_name = ?", (s["scheme_name"],))
         row = cursor.fetchone()
         

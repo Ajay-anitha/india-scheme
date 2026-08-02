@@ -1,82 +1,91 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
-  const links = [
-    { label: 'Privacy Policy', href: '#' },
-    { label: 'Terms of Use', href: '#' },
-    { label: 'myScheme.gov.in', href: 'https://www.myscheme.gov.in', external: true },
-    { label: 'india.gov.in', href: 'https://www.india.gov.in', external: true },
-    { label: 'Digital India', href: 'https://www.digitalindia.gov.in', external: true },
+  const externalLinks = [
+    { label: 'myScheme.gov.in', href: 'https://www.myscheme.gov.in' },
+    { label: 'india.gov.in', href: 'https://www.india.gov.in' },
+    { label: 'Digital India', href: 'https://www.digitalindia.gov.in' },
   ];
 
   return (
     <footer className="border-t border-slate-200 bg-white mt-16">
+      {/* Flag accent stripe */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#ff9933] via-white to-[#138808]" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        {/* Top row */}
         <div className="flex flex-col md:flex-row md:items-start gap-8 mb-8">
+          
           {/* Brand */}
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 bg-[#1e3a8a] rounded-lg flex items-center justify-center text-white text-lg">🏛️</div>
+              <div className="w-10 h-10 bg-[#1e3a8a] text-white rounded-xl flex items-center justify-center text-xl shadow-sm">
+                🏛️
+              </div>
               <div>
-                <div className="font-bold text-slate-800 text-base" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                  SchemeAI Portal
+                <div className="font-extrabold text-slate-900 text-base" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                  AI Government Scheme Assistant
                 </div>
-                <div className="text-xs text-slate-400">AI Government Welfare Assistant</div>
+                <div className="text-xs font-bold text-emerald-700">National Welfare & Information Directory</div>
               </div>
             </div>
             <p className="text-sm text-slate-500 max-w-sm leading-relaxed">
-              Helping citizens discover, understand, and apply for government welfare schemes through AI-powered guidance.
+              Empowering citizens across India to search, verify eligibility, and apply for government welfare schemes using modern AI & voice search.
             </p>
           </div>
 
-          {/* Links */}
+          {/* Nav Links */}
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Quick Links</p>
-            <ul className="space-y-2">
-              {links.map((l) => (
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Navigation</p>
+            <ul className="space-y-2 text-sm font-semibold">
+              <li>
+                <Link to="/" className="text-slate-600 hover:text-[#1e3a8a] transition-colors">Home Directory</Link>
+              </li>
+              <li>
+                <Link to="/about" className="text-slate-600 hover:text-[#1e3a8a] transition-colors">About Portal</Link>
+              </li>
+              <li>
+                <Link to="/contact" className="text-slate-600 hover:text-[#1e3a8a] transition-colors">Contact Helpdesk</Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* External Government Portals */}
+          <div>
+            <p className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Official Portals</p>
+            <ul className="space-y-2 text-sm font-semibold">
+              {externalLinks.map((l) => (
                 <li key={l.label}>
                   <a
                     href={l.href}
-                    target={l.external ? '_blank' : undefined}
-                    rel={l.external ? 'noopener noreferrer' : undefined}
-                    className="text-sm text-slate-500 hover:text-[#1e3a8a] transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-600 hover:text-[#1e3a8a] transition-colors flex items-center gap-1"
                   >
-                    {l.label} {l.external && '↗'}
+                    <span>{l.label}</span>
+                    <span className="text-xs">↗</span>
                   </a>
                 </li>
               ))}
             </ul>
           </div>
-
-          {/* Contact */}
-          <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3">Contact</p>
-            <ul className="space-y-2">
-              <li className="text-sm text-slate-500">📧 help@schemeai.gov.in</li>
-              <li className="text-sm text-slate-500">📞 1800-XXX-XXXX (Toll Free)</li>
-              <li className="text-sm text-slate-500">🕐 Mon – Sat: 9 AM – 6 PM</li>
-            </ul>
-          </div>
         </div>
 
         {/* Disclaimer */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-6">
-          <p className="text-xs text-amber-800 leading-relaxed">
-            <strong>⚠️ Disclaimer:</strong> This portal is an AI-assisted guidance tool for informational purposes only.
-            Scheme details may vary. Citizens must verify final eligibility and documentation requirements on the respective
-            official government ministry portals before applying.
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-6">
+          <p className="text-xs text-amber-900 leading-relaxed font-medium">
+            <strong>⚠️ Official Guidance Disclaimer:</strong> This platform provides AI-assisted search and eligibility guidance for citizen empowerment. Always verify final application guidelines on official central and state government portals before submitting documents.
           </p>
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-400 pt-6 border-t border-slate-100">
-          <p>© {year} SchemeAI Portal. Powered by AI & FastAPI Backend.</p>
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-semibold text-slate-500 pt-6 border-t border-slate-100">
+          <p>© {year} AI Government Scheme Assistant. Production-Ready Deployment.</p>
+          <div className="flex items-center gap-1.5">
             <span>🇮🇳</span>
-            <span>A Digital India Initiative</span>
+            <span>A Digital India Inspired AI Initiative</span>
           </div>
         </div>
       </div>

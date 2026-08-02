@@ -23,7 +23,7 @@ export default function SchemeDetailsModal({ scheme, accentColor, accentBg, onCl
     { label: 'Target Occupation', value: scheme.occupation || 'All' },
     { label: 'Age Range', value: scheme.min_age || scheme.max_age ? `${scheme.min_age ?? 0} – ${scheme.max_age ?? '∞'} years` : 'Any' },
     { label: 'Category', value: scheme.category || 'All' },
-    { label: 'Income Limit', value: scheme.max_income ? `₹${Number(scheme.max_income).toLocaleString('en-IN')}` : 'No limit' },
+    { label: 'Income Limit', value: (scheme.max_income && scheme.max_income < 10000000) ? `₹${Number(scheme.max_income).toLocaleString('en-IN')}` : 'No upper limit' },
   ];
 
   return (

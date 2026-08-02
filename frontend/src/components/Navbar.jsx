@@ -1,100 +1,114 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
 
-export default function Navbar({ activeTab, setActiveTab }) {
-  const [scrolled, setScrolled] = useState(false);
+/**
+ * Government-Style Header & Navigation Component
+ */
+export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
-  useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    window.addEventListener('scroll', onScroll);
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const navItems = [
-    { id: 'home',        label: 'Home' },
-    { id: 'eligibility', label: 'Check Eligibility' },
-    { id: 'chat',        label: 'AI Assistant' },
-    { id: 'about',       label: 'About' },
+  const navLinks = [
+    { path: '/', label: 'Home' },
+    { path: '/eligibility', label: 'Eligibility' },
+    { path: '/about', label: 'About' },
+    { path: '/contact', label: 'Contact' },
   ];
 
   return (
-    <header
-      className={`sticky top-0 z-50 bg-white transition-shadow duration-200 ${
-        scrolled ? 'shadow-md border-b border-slate-100' : 'border-b border-slate-200'
-      }`}
-    >
+    <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+      {/* Top National Flag Stripe */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-[#ff9933] via-white to-[#138808]" />
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Brand */}
-          <button
-            onClick={() => setActiveTab('home')}
-            className="flex items-center gap-3 group focus:outline-none"
-          >
-            <div className="w-9 h-9 bg-[#1e3a8a] rounded-lg flex items-center justify-center text-white text-lg shadow-sm">
+        <div className="flex items-center justify-between h-16 sm:h-20">
+          
+          {/* Brand Logo & Title */}
+          <Link to="/" className="flex items-center gap-3 group focus:outline-none">
+            <div className="w-10 h-10 bg-[#1e3a8a] text-white rounded-xl flex items-center justify-center text-xl shadow-md group-hover:bg-[#1e40af] transition-colors">
               🏛️
             </div>
-            <div className="text-left">
-              <div className="font-bold text-slate-800 text-base leading-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
-                SchemeAI
+            <div>
+              <div className="font-extrabold text-slate-900 text-base sm:text-lg leading-tight tracking-tight" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                AI Government Scheme Assistant
               </div>
-              <div className="text-xs text-slate-400 leading-none">Government Welfare Portal</div>
+              <div className="text-[11px] font-bold text-emerald-700 tracking-wider uppercase">
+                National Welfare & Eligibility Portal
+              </div>
             </div>
-          </button>
+          </Link>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={`nav-link ${activeTab === item.id ? 'active text-slate-900 bg-slate-100' : ''}`}
+          {/* Desktop Navigation Links */}
+          <nav className="hidden md:flex items-center gap-2">
+            {navLinks.map((link) => (
+              <NavLink
+                key={link.path}
+                to={link.path}
+                className={({ isActive }) =>
+                  `px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                    isActive
+                      ? 'bg-blue-50 text-[#1e3a8a] border border-blue-200 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`
+                }
               >
-                {item.label}
-              </button>
+                {link.label}
+              </NavLink>
             ))}
           </nav>
 
-          {/* CTA + mobile menu */}
+          {/* Contact / Help CTA & Mobile Hamburger */}
           <div className="flex items-center gap-3">
-            <button
-              className="hidden md:inline-flex btn-accent text-sm"
-              style={{ '--accent': '#1e3a8a', '--accent-ring': 'rgba(30,58,138,0.15)' }}
-              onClick={() => setActiveTab('eligibility')}
+            <Link
+              to="/contact"
+              className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#047857] hover:bg-[#065f46] text-white text-xs sm:text-sm font-bold shadow-sm transition-colors"
             >
-              Check Eligibility
-            </button>
+              <span>Portal Helpdesk</span>
+              <span className="text-xs">↗</span>
+            </Link>
+
+            {/* Mobile Menu Toggle Button */}
             <button
-              className="md:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100"
+              type="button"
+              className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 focus:outline-none"
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Menu"
+              aria-label="Toggle navigation menu"
             >
-              <span className="block w-5 h-0.5 bg-current mb-1" />
-              <span className="block w-5 h-0.5 bg-current mb-1" />
-              <span className="block w-4 h-0.5 bg-current" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {menuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile nav */}
+      {/* Mobile Navigation Menu Dropdown */}
       {menuOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white px-4 py-3 flex flex-col gap-1">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => { setActiveTab(item.id); setMenuOpen(false); }}
-              className={`nav-link text-left w-full ${activeTab === item.id ? 'active' : ''}`}
+        <div className="md:hidden border-t border-slate-200 bg-white px-4 py-3 space-y-2">
+          {navLinks.map((link) => (
+            <NavLink
+              key={link.path}
+              to={link.path}
+              onClick={() => setMenuOpen(false)}
+              className={({ isActive }) =>
+                `block px-4 py-2.5 rounded-xl text-sm font-bold ${
+                  isActive ? 'bg-blue-50 text-[#1e3a8a]' : 'text-slate-700 hover:bg-slate-100'
+                }`
+              }
             >
-              {item.label}
-            </button>
+              {link.label}
+            </NavLink>
           ))}
-          <button
-            className="mt-2 btn-accent w-full justify-center"
-            style={{ '--accent': '#1e3a8a' }}
-            onClick={() => { setActiveTab('eligibility'); setMenuOpen(false); }}
+          <Link
+            to="/contact"
+            onClick={() => setMenuOpen(false)}
+            className="block text-center py-2.5 rounded-xl bg-[#047857] text-white font-bold text-sm"
           >
-            Check Eligibility
-          </button>
+            Portal Helpdesk
+          </Link>
         </div>
       )}
     </header>
