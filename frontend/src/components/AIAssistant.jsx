@@ -284,7 +284,7 @@ export default function AIAssistant({ categoryName }) {
                 key={i}
                 type="button"
                 onClick={() => handleSend(`Show schemes under ${chipText}`)}
-                className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:border-[#1e3a8a] hover:text-[#1e3a8a] hover:bg-blue-50 transition-all shadow-2xs"
+                className="shrink-0 text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-300 bg-white text-slate-700 hover:border-[#1e3a8a] hover:text-[#1e3a8a] hover:bg-blue-50 transition-all shadow-sm"
               >
                 {chipText}
               </button>
@@ -302,7 +302,7 @@ export default function AIAssistant({ categoryName }) {
               <div className={`flex gap-2.5 max-w-[90%] sm:max-w-[82%] ${msg.sender === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 {/* Avatar */}
                 <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-xs ${
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0 mt-0.5 shadow-sm ${
                     msg.sender === 'user' ? 'bg-slate-800 text-white' : 'bg-[#1e3a8a] text-white'
                   }`}
                 >
@@ -313,8 +313,8 @@ export default function AIAssistant({ categoryName }) {
                 <div
                   className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
                     msg.sender === 'user'
-                      ? 'bg-[#1e3a8a] text-white rounded-tr-xs shadow-sm font-medium'
-                      : 'bg-white text-slate-800 border border-slate-200 rounded-tl-xs shadow-xs'
+                      ? 'bg-[#1e3a8a] text-white rounded-tr-none shadow-sm font-medium'
+                      : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none shadow-sm'
                   }`}
                 >
                   {msg.text}

@@ -46,7 +46,7 @@ export default function Navbar() {
                 className={({ isActive }) =>
                   `px-4 py-2 rounded-xl text-sm font-bold transition-all ${
                     isActive
-                      ? 'bg-blue-50 text-[#1e3a8a] border border-blue-200 shadow-2xs'
+                      ? 'bg-blue-50 text-[#1e3a8a] border border-blue-200 shadow-sm'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`
                 }

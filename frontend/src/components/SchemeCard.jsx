@@ -47,7 +47,7 @@ export default function SchemeCard({ scheme }) {
 
           {/* Badges Overlay */}
           <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
-            <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-white/95 text-[#1e3a8a] border border-white/40 shadow-xs uppercase tracking-wider">
+            <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-white/95 text-[#1e3a8a] border border-white/40 shadow-sm uppercase tracking-wider">
               🏛️ {scheme.category || 'General'}
             </span>
             <span className="text-[11px] font-bold text-white bg-slate-900/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/20">

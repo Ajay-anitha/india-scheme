@@ -46,7 +46,7 @@ export default function CategoryCards() {
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-slate-900/30 to-transparent" />
 
                 {/* Category Icon Badge */}
-                <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/40 shadow-xs">
+                <div className="absolute bottom-3 left-3 flex items-center gap-2 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/40 shadow-sm">
                   <span className="text-lg">{cat.icon}</span>
                   <span className="text-xs font-extrabold text-slate-900">{cat.name}</span>
                 </div>
