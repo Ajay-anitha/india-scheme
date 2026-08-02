@@ -8,6 +8,7 @@ export default function HeroBanner({ category, onSearch, searchQuery, setSearchQ
   const [currentImg, setCurrentImg] = useState(category.image);
   const [prevImg, setPrevImg] = useState(null);
   const [fading, setFading] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const timerRef = useRef(null);
 
   // Crossfade when category changes
@@ -17,6 +18,7 @@ export default function HeroBanner({ category, onSearch, searchQuery, setSearchQ
     setPrevImg(currentImg);
     setFading(true);
     setCurrentImg(category.image);
+    setImgError(false);
     timerRef.current = setTimeout(() => {
       setPrevImg(null);
       setFading(false);
@@ -30,6 +32,12 @@ export default function HeroBanner({ category, onSearch, searchQuery, setSearchQ
 
   return (
     <section className="relative overflow-hidden" style={{ minHeight: 420 }}>
+      {/* Background: fallback gradient */}
+      <div
+        className="absolute inset-0"
+        style={{ background: category.gradient, zIndex: 0 }}
+      />
+
       {/* Background: previous image (fading out) */}
       {prevImg && (
         <img
@@ -41,19 +49,15 @@ export default function HeroBanner({ category, onSearch, searchQuery, setSearchQ
         />
       )}
 
-      {/* Background: current image or gradient fallback */}
-      {currentImg ? (
+      {/* Background: current image */}
+      {currentImg && !imgError && (
         <img
           src={currentImg}
           alt={category.name}
           className="hero-img"
           style={{ opacity: 1, zIndex: 2 }}
           loading="lazy"
-        />
-      ) : (
-        <div
-          className="absolute inset-0"
-          style={{ background: category.gradient, zIndex: 2 }}
+          onError={() => setImgError(true)}
         />
       )}
 

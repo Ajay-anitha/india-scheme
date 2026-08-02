@@ -4,9 +4,14 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from database import init_db, get_all_schemes, get_scheme_by_id, check_eligibility_in_db
-from models import EligibilityRequest, ChatRequest, ChatResponse
-from seed_data import seed_database
+try:
+    from backend.database import init_db, get_all_schemes, get_scheme_by_id, check_eligibility_in_db
+    from backend.models import EligibilityRequest, ChatRequest, ChatResponse
+    from backend.seed_data import seed_database
+except ImportError:
+    from database import init_db, get_all_schemes, get_scheme_by_id, check_eligibility_in_db
+    from models import EligibilityRequest, ChatRequest, ChatResponse
+    from seed_data import seed_database
 
 load_dotenv()
 
@@ -77,7 +82,8 @@ def ai_chat(payload: ChatRequest):
     # 1. Gemini API Integration if key present
     if gemini_key:
         try:
-            from google import genai
+            import importlib
+            genai = importlib.import_module("google.genai")
             client = genai.Client(api_key=gemini_key)
             system_prompt = (
                 "You are an expert AI Government Scheme Assistant for India. "

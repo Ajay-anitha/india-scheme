@@ -5,6 +5,7 @@ import HomePage from './pages/HomePage';
 import EligibilityPage from './pages/EligibilityPage';
 import ResultsPage from './pages/ResultsPage';
 import ChatPage from './pages/ChatPage';
+import AboutPage from './pages/AboutPage';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('home');
@@ -44,6 +45,10 @@ export default function App() {
 
       {activeTab === 'chat' && (
         <ChatPage />
+      )}
+
+      {activeTab === 'about' && (
+        <AboutPage />
       )}
 
       <Footer />
