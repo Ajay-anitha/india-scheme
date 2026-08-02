@@ -7,7 +7,7 @@
     <title>AI Government Scheme Assistant</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Fallback React & Babel for browser standalone execution -->
     <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
@@ -124,10 +124,11 @@
             }
           };
 
-          const handleSendChat = async (e) => {
-            e.preventDefault();
-            if (!chatInput.trim() || chatLoading) return;
-            const text = chatInput.trim();
+          const handleSendChat = async (e, directQuery = null) => {
+            if (e) e.preventDefault();
+            const text = (directQuery || chatInput).trim();
+            if (!text || chatLoading) return;
+            
             setChatMsgs(prev => [...prev, { sender: 'user', text }]);
             setChatInput('');
             setChatLoading(true);
@@ -146,24 +147,35 @@
             }
           };
 
+          const categories = [
+            { name: "All", icon: "🌐" },
+            { name: "Agriculture", icon: "🌾" },
+            { name: "Health", icon: "🏥" },
+            { name: "Finance", icon: "💰" },
+            { name: "Women & Child", icon: "👩" },
+            { name: "Housing", icon: "🏠" },
+            { name: "Vendors", icon: "🛒" }
+          ];
+
           return (
             <div className="app-container">
               {/* Navbar */}
               <header className="navbar">
                 <div className="nav-content">
                   <div className="logo" onClick={() => setActiveTab('home')}>
-                    <span>🏛️ SchemeAI</span>
-                    <span className="logo-badge">Gov Assistant</span>
+                    <div className="logo-icon-wrapper">🏛️</div>
+                    <span className="brand-title">SchemeAI</span>
+                    <span className="logo-badge">Gov Portal</span>
                   </div>
                   <nav className="nav-links">
                     <button className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>
-                      🏠 Home & Schemes
+                      🏠 All Schemes
                     </button>
                     <button className={`nav-item ${activeTab === 'eligibility' ? 'active' : ''}`} onClick={() => setActiveTab('eligibility')}>
-                      📋 Eligibility Check
+                      🎯 Eligibility Check
                     </button>
                     <button className={`nav-item ${activeTab === 'chat' ? 'active' : ''}`} onClick={() => setActiveTab('chat')}>
-                      💬 AI Assistant
+                      🤖 AI Assistant
                     </button>
                   </nav>
                 </div>
@@ -174,11 +186,42 @@
                 <div>
                   <section className="hero">
                     <div className="hero-inner">
-                      <h1 className="hero-title">AI Government Scheme Assistant</h1>
-                      <p className="hero-subtitle">Discover eligible schemes, check your qualifications, and ask questions to our AI chatbot.</p>
+                      <div className="hero-tag">
+                        <span>🇮🇳 Official AI Government Schemes Recommendation Platform</span>
+                      </div>
+                      <h1 className="hero-title">
+                        Empowering Every Citizen with <span className="gradient-text">Direct Government Benefits</span>
+                      </h1>
+                      <p className="hero-subtitle">
+                        Instantly check your eligibility for central & state welfare schemes, receive tailored financial support recommendations, and get 24/7 instant guidance.
+                      </p>
                       <div className="hero-actions">
-                        <button className="btn btn-accent" onClick={() => setActiveTab('eligibility')}>📋 Check Your Eligibility</button>
-                        <button className="btn btn-outline" onClick={() => setActiveTab('chat')}>💬 Ask AI Assistant</button>
+                        <button className="btn btn-primary" onClick={() => setActiveTab('eligibility')}>🎯 Check Your Eligibility Now</button>
+                        <button className="btn btn-outline" onClick={() => setActiveTab('chat')}>💬 Ask AI Assistant (Voice)</button>
+                      </div>
+
+                      <div className="stats-bar">
+                        <div className="stat-item">
+                          <div className="stat-icon">🏛️</div>
+                          <div>
+                            <div className="stat-value">500+ Central & State</div>
+                            <div className="stat-label">Verified Welfare Schemes</div>
+                          </div>
+                        </div>
+                        <div className="stat-item">
+                          <div className="stat-icon">⚡</div>
+                          <div>
+                            <div className="stat-value">Instant Match</div>
+                            <div className="stat-label">AI Eligibility Verification</div>
+                          </div>
+                        </div>
+                        <div className="stat-item">
+                          <div className="stat-icon">🎙️</div>
+                          <div>
+                            <div className="stat-value">Voice & Chat AI</div>
+                            <div className="stat-label">24/7 Multilingual Support</div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </section>
@@ -186,20 +229,28 @@
                   <main className="main-content">
                     <div className="search-section">
                       <div className="search-box">
-                        <input
-                          type="text"
-                          className="search-input"
-                          placeholder="Search schemes by name or keyword (e.g. Kisan, Health, Loan)..."
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && fetchSchemesList(searchQuery)}
-                        />
-                        <button className="btn btn-primary" onClick={() => fetchSchemesList(searchQuery)}>🔍 Search</button>
+                        <div className="search-input-wrapper">
+                          <span className="search-icon">🔍</span>
+                          <input
+                            type="text"
+                            className="search-input"
+                            placeholder="Search schemes by keyword (e.g., PM Kisan, Ayushman Bharat, Mudra Loan)..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && fetchSchemesList(searchQuery)}
+                          />
+                        </div>
+                        <button className="btn btn-primary" onClick={() => fetchSchemesList(searchQuery)}>Search Schemes</button>
                       </div>
                       <div className="category-chips">
-                        {["All", "Agriculture", "Health", "Finance", "Women & Child", "Housing", "Vendors"].map(cat => (
-                          <button key={cat} className="chip" onClick={() => { setSearchQuery(cat === "All" ? "" : cat); fetchSchemesList(cat === "All" ? "" : cat); }}>
-                            {cat}
+                        {categories.map(cat => (
+                          <button 
+                            key={cat.name} 
+                            className={`chip ${searchQuery === (cat.name === "All" ? "" : cat.name) ? 'active' : ''}`} 
+                            onClick={() => { const q = cat.name === "All" ? "" : cat.name; setSearchQuery(q); fetchSchemesList(q); }}
+                          >
+                            <span>{cat.icon}</span>
+                            <span>{cat.name}</span>
                           </button>
                         ))}
                       </div>
@@ -207,37 +258,51 @@
 
                     {error && <div className="alert-error">⚠️ {error}</div>}
 
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: 700, marginBottom: '1rem' }}>Government Schemes ({schemes.length})</h2>
+                    <div className="section-header">
+                      <h2 className="section-title">
+                        <span>Government Schemes</span>
+                        <span className="count-badge">{schemes.length} Available</span>
+                      </h2>
+                    </div>
 
                     {loading ? (
-                      <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>Loading schemes...</div>
+                      <div style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                        <div className="loading-dots" style={{ justifyContent: 'center', marginBottom: '0.5rem' }}>
+                          <div className="loading-dot"></div>
+                          <div className="loading-dot"></div>
+                          <div className="loading-dot"></div>
+                        </div>
+                        Loading schemes...
+                      </div>
                     ) : (
                       <div className="schemes-grid">
                         {schemes.map(s => (
                           <div key={s.id} className="scheme-card">
                             <div>
                               <div className="scheme-header">
-                                <div className="scheme-ministry">{s.ministry}</div>
+                                <div className="scheme-top-bar">
+                                  <span className="scheme-ministry">🏛️ {s.ministry}</span>
+                                  <span className="scheme-badge">📍 {s.state}</span>
+                                </div>
                                 <h3 className="scheme-title">{s.scheme_name}</h3>
-                                <span className="scheme-badge">📍 {s.state}</span>
                               </div>
                               <div className="scheme-body">
                                 <div className="scheme-section">
-                                  <div className="scheme-section-title">💡 Benefits:</div>
+                                  <div className="scheme-section-title">💡 Benefits & Support:</div>
                                   <p>{s.benefits}</p>
                                 </div>
                                 <div className="scheme-section">
-                                  <div className="scheme-section-title">📋 Eligibility:</div>
+                                  <div className="scheme-section-title">📋 Eligibility Criteria:</div>
                                   <p>{s.eligibility}</p>
                                 </div>
-                                <div className="scheme-section" style={{ marginTop: '0.5rem' }}>
+                                <div className="scheme-section" style={{ marginTop: '0.85rem' }}>
                                   <div className="scheme-section-title">📄 Required Documents:</div>
                                   <p>{s.required_documents}</p>
                                 </div>
                               </div>
                             </div>
                             <div className="scheme-footer">
-                              <a href={s.apply_link} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.82rem' }}>
+                              <a href={s.apply_link} target="_blank" rel="noreferrer" className="btn btn-primary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
                                 Apply Online 🔗
                               </a>
                             </div>
@@ -253,24 +318,27 @@
               {activeTab === 'eligibility' && (
                 <div className="main-content">
                   <div className="form-container">
-                    <h2 className="form-title">Check Scheme Eligibility</h2>
-                    <p className="form-subtitle">Fill in your details below to find schemes you qualify for.</p>
+                    <div className="form-header-bar">
+                      <h2 className="form-title">🎯 Personal Scheme Matcher</h2>
+                      <p className="form-subtitle">Provide your demographic profile below to calculate tailored eligibility across welfare schemes.</p>
+                    </div>
+
                     <form onSubmit={handleEligibilitySubmit}>
                       <div className="form-grid">
                         <div className="form-group">
-                          <label className="form-label">Age (Years)</label>
+                          <label className="form-label">🎂 Age (Years)</label>
                           <input type="number" name="age" className="form-input" placeholder="e.g. 28" />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Gender</label>
+                          <label className="form-label">👤 Gender</label>
                           <select name="gender" className="form-select">
-                            <option value="All">All / Male & Female</option>
+                            <option value="All">All / Any Gender</option>
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                           </select>
                         </div>
                         <div className="form-group">
-                          <label className="form-label">State</label>
+                          <label className="form-label">📍 Resident State</label>
                           <select name="state" className="form-select">
                             <option value="All India">All India</option>
                             <option value="Maharashtra">Maharashtra</option>
@@ -280,7 +348,7 @@
                           </select>
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Occupation</label>
+                          <label className="form-label">💼 Occupation</label>
                           <select name="occupation" className="form-select">
                             <option value="All">All / Any</option>
                             <option value="Farmer">Farmer</option>
@@ -291,11 +359,11 @@
                           </select>
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Annual Income (₹)</label>
+                          <label className="form-label">💵 Annual Family Income (₹)</label>
                           <input type="number" name="annual_income" className="form-input" placeholder="e.g. 150000" />
                         </div>
                         <div className="form-group">
-                          <label className="form-label">Category</label>
+                          <label className="form-label">📜 Social Category</label>
                           <select name="category" className="form-select">
                             <option value="All">All</option>
                             <option value="General">General</option>
@@ -305,9 +373,9 @@
                             <option value="EWS">EWS</option>
                           </select>
                         </div>
-                        <div className="form-group full-width" style={{ marginTop: '1rem' }}>
-                          <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }}>
-                            Find Eligible Schemes 🔍
+                        <div className="form-group full-width" style={{ marginTop: '1.25rem' }}>
+                          <button type="submit" className="btn btn-primary" style={{ width: '100%', padding: '1rem', fontSize: '1.05rem', justifyContent: 'center' }}>
+                            ✨ Find My Eligible Schemes
                           </button>
                         </div>
                       </div>
@@ -319,20 +387,31 @@
               {/* RESULTS TAB */}
               {activeTab === 'results' && (
                 <div className="main-content">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2>Eligible Schemes ({eligibilityResults.length})</h2>
+                  <div className="section-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
+                    <div>
+                      <h2 className="section-title">
+                        <span>🎉 Matched Eligible Schemes</span>
+                        <span className="count-badge">{eligibilityResults.length} Matched</span>
+                      </h2>
+                    </div>
                     <button className="btn btn-secondary" onClick={() => setActiveTab('eligibility')}>✏️ Modify Criteria</button>
                   </div>
+
                   {eligibilityResults.length === 0 ? (
-                    <div style={{ padding: '2rem', background: 'white', borderRadius: '12px', textAlign: 'center' }}>No matching schemes found.</div>
+                    <div style={{ textAlign: 'center', padding: '3.5rem 2rem', background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                      <p style={{ fontSize: '1.2rem', fontWeight: 700, color: '#0f172a' }}>No matching schemes found.</p>
+                      <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setActiveTab('eligibility')}>Adjust Parameters</button>
+                    </div>
                   ) : (
                     <div className="schemes-grid">
                       {eligibilityResults.map(s => (
                         <div key={s.id} className="scheme-card">
                           <div className="scheme-header">
-                            <div className="scheme-ministry">{s.ministry}</div>
+                            <div className="scheme-top-bar">
+                              <span className="scheme-ministry">🏛️ {s.ministry}</span>
+                              <span className="scheme-badge">📍 {s.state}</span>
+                            </div>
                             <h3 className="scheme-title">{s.scheme_name}</h3>
-                            <span className="scheme-badge">📍 {s.state}</span>
                           </div>
                           <div className="scheme-body">
                             <div className="scheme-section"><div className="scheme-section-title">💡 Benefits:</div><p>{s.benefits}</p></div>
@@ -354,13 +433,28 @@
                 <div className="main-content">
                   <div className="chat-wrapper">
                     <div className="chat-header">
-                      <div style={{ fontSize: '1.8rem' }}>🤖</div>
-                      <div className="chat-header-info">
-                        <h3>AI Scheme Assistant</h3>
-                        <p>Online • Web Speech Voice Input Enabled</p>
+                      <div className="chat-header-title">
+                        <div className="chat-avatar">🤖</div>
+                        <div className="chat-header-info">
+                          <h3>AI Scheme Assistant</h3>
+                          <p><span className="online-dot"></span> Active • Real-time Voice & Text AI</p>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="chat-suggested">
+                      {[
+                        "🌾 What schemes exist for farmers?",
+                        "🏥 Am I eligible for Ayushman Bharat?",
+                        "💰 PM Mudra Loan details?",
+                        "👩 Schemes for women entrepreneurs?"
+                      ].map((prompt, i) => (
+                        <button key={i} className="chat-chip" onClick={() => handleSendChat(null, prompt)}>{prompt}</button>
+                      ))}
+                    </div>
+
                     {isRecording && <div className="voice-status">🎙️ Listening to your voice... Speak now!</div>}
+
                     <div className="chat-messages">
                       {chatMsgs.map((m, idx) => (
                         <div key={idx} className={`message-bubble ${m.sender === 'user' ? 'message-user' : 'message-assistant'}`}>
@@ -369,7 +463,7 @@
                       ))}
                       {chatLoading && <div className="message-bubble message-assistant">Thinking...</div>}
                     </div>
-                    <form onSubmit={handleSendChat} className="chat-input-area">
+                    <form onSubmit={(e) => handleSendChat(e)} className="chat-input-area">
                       <input
                         type="text"
                         className="chat-input"
@@ -387,7 +481,19 @@
               )}
 
               <footer className="footer">
-                <p><strong>AI Government Scheme Assistant MVP</strong></p>
+                <div className="footer-inner">
+                  <div className="footer-brand">
+                    <span style={{ fontSize: '1.6rem' }}>🏛️</span>
+                    <span>SchemeAI Portal</span>
+                  </div>
+                  <div className="footer-links">
+                    <a href="https://www.myscheme.gov.in" target="_blank" rel="noreferrer">myScheme India 🔗</a>
+                    <a href="https://www.india.gov.in" target="_blank" rel="noreferrer">National Portal 🇮🇳</a>
+                  </div>
+                </div>
+                <div className="footer-bottom">
+                  <p><strong>AI Government Scheme Assistant</strong> • Powered by FastAPI & Intelligent Matcher</p>
+                </div>
               </footer>
             </div>
           );

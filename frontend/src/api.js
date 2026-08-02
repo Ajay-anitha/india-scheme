@@ -1,56 +1,30 @@
-const API_BASE_URL = "http://localhost:8000";
+const API_BASE = 'http://localhost:8000';
 
-export async function fetchSchemes(searchQuery = "") {
-  try {
-    const url = searchQuery 
-      ? `${API_BASE_URL}/schemes?q=${encodeURIComponent(searchQuery)}`
-      : `${API_BASE_URL}/schemes`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Failed to fetch schemes from server.");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (fetchSchemes):", error);
-    throw error;
-  }
+export async function fetchSchemes(query = '') {
+  const url = query
+    ? `${API_BASE}/schemes?q=${encodeURIComponent(query)}`
+    : `${API_BASE}/schemes`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('Backend offline');
+  return res.json();
 }
 
-export async function fetchSchemeById(schemeId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/scheme/${schemeId}`);
-    if (!response.ok) throw new Error("Scheme not found.");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (fetchSchemeById):", error);
-    throw error;
-  }
-}
-
-export async function checkEligibility(formData) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/eligibility`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formData)
-    });
-    if (!response.ok) throw new Error("Failed to check eligibility.");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (checkEligibility):", error);
-    throw error;
-  }
+export async function checkEligibility(payload) {
+  const res = await fetch(`${API_BASE}/eligibility`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Eligibility check failed');
+  return res.json();
 }
 
 export async function sendChatMessage(message) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message })
-    });
-    if (!response.ok) throw new Error("Failed to send message to AI assistant.");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (sendChatMessage):", error);
-    throw error;
-  }
+  const res = await fetch(`${API_BASE}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message }),
+  });
+  if (!res.ok) throw new Error('Chat failed');
+  return res.json();
 }

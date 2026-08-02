@@ -2,159 +2,160 @@ import React, { useState } from 'react';
 import { checkEligibility } from '../api';
 
 const STATES = [
-  "All India", "Maharashtra", "Uttar Pradesh", "Bihar", "Delhi", 
-  "Karnataka", "Tamil Nadu", "West Bengal", "Gujarat", "Rajasthan", "Madhya Pradesh"
+  'All India', 'Maharashtra', 'Uttar Pradesh', 'Bihar', 'Delhi',
+  'Karnataka', 'Tamil Nadu', 'West Bengal', 'Gujarat', 'Rajasthan',
+  'Madhya Pradesh', 'Andhra Pradesh', 'Telangana', 'Kerala', 'Punjab',
 ];
+const OCCUPATIONS = ['All', 'Farmer', 'Student', 'Entrepreneur', 'Vendor', 'Unemployed', 'Worker', 'Salaried'];
+const CATEGORIES  = ['All', 'General', 'OBC', 'SC', 'ST', 'EWS'];
 
-const OCCUPATIONS = [
-  "All", "Farmer", "Student", "Entrepreneur", "Vendor", "Unemployed", "Worker"
-];
+const ACCENT = '#1e3a8a';
 
-const CATEGORIES = [
-  "All", "General", "OBC", "SC", "ST", "EWS"
-];
+const FormField = ({ label, children }) => (
+  <div className="flex flex-col gap-1.5">
+    <label className="text-sm font-semibold text-slate-700">{label}</label>
+    {children}
+  </div>
+);
 
 export default function EligibilityPage({ onResultsReceived }) {
-  const [formData, setFormData] = useState({
-    age: '',
-    gender: 'All',
-    state: 'All India',
-    occupation: 'All',
-    annual_income: '',
-    category: 'All'
+  const [form, setForm] = useState({
+    age: '', gender: 'All', state: 'All India',
+    occupation: 'All', annual_income: '', category: 'All',
   });
-
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const [error, setError]     = useState(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const handle = (e) => setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const handleSubmit = async (e) => {
+  const submit = async (e) => {
     e.preventDefault();
-    setLoading(false);
-    setError(null);
-
-    // Form input formatting
-    const payload = {
-      age: formData.age !== '' ? parseInt(formData.age, 10) : null,
-      gender: formData.gender,
-      state: formData.state,
-      occupation: formData.occupation,
-      annual_income: formData.annual_income !== '' ? parseInt(formData.annual_income, 10) : null,
-      category: formData.category
-    };
-
     setLoading(true);
+    setError(null);
     try {
-      const response = await checkEligibility(payload);
-      if (onResultsReceived) {
-        onResultsReceived(response.schemes || [], formData);
-      }
-    } catch (err) {
-      setError("Failed to check eligibility. Please check backend connection.");
+      const payload = {
+        age: form.age ? parseInt(form.age, 10) : null,
+        gender: form.gender,
+        state: form.state,
+        occupation: form.occupation,
+        annual_income: form.annual_income ? parseInt(form.annual_income, 10) : null,
+        category: form.category,
+      };
+      const data = await checkEligibility(payload);
+      onResultsReceived(data.schemes || [], form);
+    } catch {
+      setError('Failed to check eligibility. Please ensure the FastAPI backend is running.');
     } finally {
       setLoading(false);
     }
   };
 
+  const inputCls = 'w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-800 bg-white outline-none transition-all focus:border-[#1e3a8a] focus:ring-2 focus:ring-[#1e3a8a]/10';
+
   return (
-    <div className="main-content">
-      <div className="form-container">
-        <h2 className="form-title">Check Scheme Eligibility</h2>
-        <p className="form-subtitle">
-          Fill in your details below to instantly discover government schemes you qualify for.
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Page heading */}
+      <div className="max-w-xl mb-8">
+        <h1 className="text-3xl font-extrabold text-slate-800 mb-2" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+          🎯 Check Your Eligibility
+        </h1>
+        <p className="text-slate-500 text-base">
+          Fill in your personal details below and our AI will instantly match you with government schemes you qualify for.
         </p>
+      </div>
 
-        {error && <div className="alert-error">⚠️ {error}</div>}
-
-        <form onSubmit={handleSubmit}>
-          <div className="form-grid">
-            
-            {/* Age */}
-            <div className="form-group">
-              <label className="form-label">Age (Years)</label>
-              <input
-                type="number"
-                name="age"
-                className="form-input"
-                placeholder="e.g. 28"
-                min="0"
-                max="120"
-                value={formData.age}
-                onChange={handleChange}
-              />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Form */}
+        <div className="lg:col-span-2">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100" style={{ background: '#eff6ff' }}>
+              <h2 className="font-bold text-[#1e3a8a] text-lg" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+                Personal Details
+              </h2>
+              <p className="text-slate-500 text-xs mt-0.5">Your information is used only to match eligible schemes.</p>
             </div>
 
-            {/* Gender */}
-            <div className="form-group">
-              <label className="form-label">Gender</label>
-              <select name="gender" className="form-select" value={formData.gender} onChange={handleChange}>
-                <option value="All">All / Male & Female</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+            <form onSubmit={submit} className="p-6">
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-5 text-sm">
+                  ⚠️ {error}
+                </div>
+              )}
 
-            {/* State */}
-            <div className="form-group">
-              <label className="form-label">State</label>
-              <select name="state" className="form-select" value={formData.state} onChange={handleChange}>
-                {STATES.map(st => (
-                  <option key={st} value={st}>{st}</option>
-                ))}
-              </select>
-            </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-6">
+                <FormField label="🎂 Age (Years)">
+                  <input name="age" type="number" min="0" max="120" placeholder="e.g., 28" className={inputCls} value={form.age} onChange={handle} />
+                </FormField>
 
-            {/* Occupation */}
-            <div className="form-group">
-              <label className="form-label">Occupation</label>
-              <select name="occupation" className="form-select" value={formData.occupation} onChange={handleChange}>
-                {OCCUPATIONS.map(occ => (
-                  <option key={occ} value={occ}>{occ}</option>
-                ))}
-              </select>
-            </div>
+                <FormField label="👤 Gender">
+                  <select name="gender" className={inputCls} value={form.gender} onChange={handle}>
+                    <option value="All">Any Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </FormField>
 
-            {/* Annual Income */}
-            <div className="form-group">
-              <label className="form-label">Annual Income (₹)</label>
-              <input
-                type="number"
-                name="annual_income"
-                className="form-input"
-                placeholder="e.g. 150000"
-                min="0"
-                value={formData.annual_income}
-                onChange={handleChange}
-              />
-            </div>
+                <FormField label="📍 Resident State">
+                  <select name="state" className={inputCls} value={form.state} onChange={handle}>
+                    {STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </FormField>
 
-            {/* Category */}
-            <div className="form-group">
-              <label className="form-label">Category</label>
-              <select name="category" className="form-select" value={formData.category} onChange={handleChange}>
-                {CATEGORIES.map(cat => (
-                  <option key={cat} value={cat}>{cat}</option>
-                ))}
-              </select>
-            </div>
+                <FormField label="💼 Occupation">
+                  <select name="occupation" className={inputCls} value={form.occupation} onChange={handle}>
+                    {OCCUPATIONS.map((o) => <option key={o} value={o}>{o}</option>)}
+                  </select>
+                </FormField>
 
-            {/* Submit Button */}
-            <div className="form-group full-width" style={{ marginTop: '1rem' }}>
-              <button type="submit" className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={loading}>
-                {loading ? 'Checking Eligibility...' : 'Find Eligible Schemes 🔍'}
+                <FormField label="💵 Annual Family Income (₹)">
+                  <input name="annual_income" type="number" min="0" placeholder="e.g., 150000" className={inputCls} value={form.annual_income} onChange={handle} />
+                </FormField>
+
+                <FormField label="📜 Social Category">
+                  <select name="category" className={inputCls} value={form.category} onChange={handle}>
+                    {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </FormField>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-4 rounded-xl text-white font-bold text-base transition-all hover:brightness-90 disabled:opacity-60 disabled:cursor-not-allowed"
+                style={{ background: ACCENT }}
+              >
+                {loading ? '🔍 Analyzing schemes…' : '✨ Find My Eligible Schemes'}
               </button>
-            </div>
-
+            </form>
           </div>
-        </form>
+        </div>
+
+        {/* Info panel */}
+        <div className="space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+            <h3 className="font-bold text-slate-800 mb-3 text-base" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>How It Works</h3>
+            {[
+              { step: '1', text: 'Enter your personal details in the form.' },
+              { step: '2', text: 'Our AI cross-checks your profile against 500+ government schemes.' },
+              { step: '3', text: 'Receive a personalised list of schemes you are eligible for.' },
+            ].map((s) => (
+              <div key={s.step} className="flex gap-3 mb-3 last:mb-0">
+                <div className="w-6 h-6 rounded-full text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5" style={{ background: ACCENT }}>
+                  {s.step}
+                </div>
+                <p className="text-sm text-slate-600">{s.text}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-5">
+            <h4 className="font-semibold text-[#1e3a8a] text-sm mb-2">🔒 Privacy Notice</h4>
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Your information is processed locally and not stored on any external server. It is used only to match government scheme eligibility criteria.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

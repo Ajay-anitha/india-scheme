@@ -2,34 +2,82 @@ import React from 'react';
 import SchemeCard from '../components/SchemeCard';
 
 export default function ResultsPage({ schemes, filterCriteria, onBackToForm }) {
+  const accent    = '#1e3a8a';
+  const accentBg  = '#eff6ff';
+
+  const criteria = [
+    filterCriteria.age        && `Age: ${filterCriteria.age}`,
+    filterCriteria.gender !== 'All' && `Gender: ${filterCriteria.gender}`,
+    filterCriteria.state      && `State: ${filterCriteria.state}`,
+    filterCriteria.occupation !== 'All' && `Occupation: ${filterCriteria.occupation}`,
+    filterCriteria.annual_income && `Income: ₹${Number(filterCriteria.annual_income).toLocaleString('en-IN')}`,
+    filterCriteria.category !== 'All' && `Category: ${filterCriteria.category}`,
+  ].filter(Boolean);
+
   return (
-    <div className="main-content">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      {/* Breadcrumb / back */}
+      <button
+        onClick={onBackToForm}
+        className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-[#1e3a8a] mb-6 transition-colors"
+      >
+        ← Back to Eligibility Form
+      </button>
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#1e3a8a' }}>
-            Eligible Government Schemes ({schemes.length})
-          </h2>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-            Based on your eligibility criteria ({filterCriteria.occupation !== 'All' ? filterCriteria.occupation : 'General'}, Age: {filterCriteria.age || 'Any'}, Income: ₹{filterCriteria.annual_income || 'Any'}).
-          </p>
+          <h1 className="text-2xl font-extrabold text-slate-800 mb-1" style={{ fontFamily: 'Plus Jakarta Sans, sans-serif' }}>
+            🎉 Your Eligible Schemes
+          </h1>
+          {criteria.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {criteria.map((c) => (
+                <span key={c} className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                  {c}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
-        <button className="btn btn-secondary" onClick={onBackToForm}>
-          ✏️ Modify Criteria
-        </button>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-slate-500">
+            <strong className="text-slate-800">{schemes.length}</strong> scheme{schemes.length !== 1 ? 's' : ''} matched
+          </span>
+          <button
+            onClick={onBackToForm}
+            className="text-sm px-4 py-2 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
+          >
+            ✏️ Modify Criteria
+          </button>
+        </div>
       </div>
 
+      {/* Results */}
       {schemes.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-          <p style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0f172a' }}>No matching schemes found for these specific criteria.</p>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.5rem' }}>Try adjusting your age or annual income filters to see more schemes.</p>
-          <button className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={onBackToForm}>
-            Back to Eligibility Form
+        <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+          <div className="text-5xl mb-4">😔</div>
+          <h3 className="text-lg font-bold text-slate-700 mb-2">No schemes matched your criteria</h3>
+          <p className="text-slate-400 text-sm mb-6 max-w-sm mx-auto">
+            Try broadening your income range, changing the state, or adjusting the occupation filter.
+          </p>
+          <button
+            onClick={onBackToForm}
+            className="px-6 py-3 rounded-xl text-white font-semibold text-sm"
+            style={{ background: accent }}
+          >
+            Adjust Parameters
           </button>
         </div>
       ) : (
-        <div className="schemes-grid">
-          {schemes.map(scheme => (
-            <SchemeCard key={scheme.id} scheme={scheme} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {schemes.map((scheme) => (
+            <SchemeCard
+              key={scheme.id}
+              scheme={scheme}
+              accentColor={accent}
+              accentBg={accentBg}
+            />
           ))}
         </div>
       )}

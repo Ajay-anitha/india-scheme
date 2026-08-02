@@ -1,58 +1,90 @@
 import React, { useState } from 'react';
+import SchemeDetailsModal from './SchemeDetailsModal';
 
-export default function SchemeCard({ scheme }) {
-  const [expanded, setExpanded] = useState(false);
+/**
+ * Scheme card with Apply and Learn More actions.
+ * Props: scheme, accentColor, accentBg
+ */
+export default function SchemeCard({ scheme, accentColor = '#1e3a8a', accentBg = '#eff6ff' }) {
+  const [showModal, setShowModal] = useState(false);
+
+  // Truncate long text
+  const truncate = (text, len = 100) =>
+    text && text.length > len ? text.slice(0, len).trimEnd() + '…' : text || '—';
 
   return (
-    <div className="scheme-card">
-      <div>
-        <div className="scheme-header">
-          <div className="scheme-ministry">{scheme.ministry}</div>
-          <h3 className="scheme-title">{scheme.scheme_name}</h3>
-          <span className="scheme-badge">📍 {scheme.state || 'All India'}</span>
-        </div>
+    <>
+      <article className="scheme-card">
+        {/* Top accent bar */}
+        <div className="h-1 w-full" style={{ background: accentColor }} />
 
-        <div className="scheme-body">
-          <div className="scheme-section">
-            <div className="scheme-section-title">💡 Benefits:</div>
-            <p>{scheme.benefits}</p>
-          </div>
-
-          <div className="scheme-section">
-            <div className="scheme-section-title">📋 Eligibility:</div>
-            <p>{scheme.eligibility}</p>
-          </div>
-
-          {expanded && (
-            <div className="scheme-section" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px dashed #e2e8f0' }}>
-              <div className="scheme-section-title">📄 Required Documents:</div>
-              <p>{scheme.required_documents}</p>
+        <div className="p-5 flex flex-col flex-1">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-2 mb-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-slate-800 text-base leading-snug mb-1 line-clamp-2">
+                {scheme.scheme_name}
+              </h3>
+              <p className="text-xs text-slate-400 font-medium">{scheme.ministry}</p>
             </div>
-          )}
-        </div>
-      </div>
+            {/* State badge */}
+            <span className="shrink-0 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+              📍 {scheme.state || 'All India'}
+            </span>
+          </div>
 
-      <div className="scheme-footer">
-        <button 
-          className="btn btn-secondary" 
-          style={{ padding: '0.4rem 0.8rem', fontSize: '0.82rem' }}
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? 'Hide Details' : 'View Full Details'}
-        </button>
-
-        {scheme.apply_link && (
-          <a 
-            href={scheme.apply_link} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="btn btn-primary"
-            style={{ padding: '0.4rem 0.8rem', fontSize: '0.82rem' }}
+          {/* Category tag */}
+          <span
+            className="inline-block mb-3 text-xs font-bold px-2.5 py-0.5 rounded-full self-start"
+            style={{ background: accentBg, color: accentColor }}
           >
-            Apply Online 🔗
-          </a>
-        )}
-      </div>
-    </div>
+            {scheme.occupation !== 'All' ? `👤 ${scheme.occupation}` : '🏛️ General'}
+          </span>
+
+          {/* Info rows */}
+          <div className="space-y-2 flex-1">
+            <div className="info-row">
+              <span className="shrink-0 font-semibold text-slate-700 w-20">Benefits:</span>
+              <span className="text-slate-500">{truncate(scheme.benefits)}</span>
+            </div>
+            <div className="info-row">
+              <span className="shrink-0 font-semibold text-slate-700 w-20">Eligibility:</span>
+              <span className="text-slate-500">{truncate(scheme.eligibility)}</span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-2 mt-5 pt-4 border-t border-slate-100">
+            {scheme.apply_link && (
+              <a
+                href={scheme.apply_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 text-center py-2.5 rounded-lg text-white text-sm font-semibold transition-all duration-150 hover:brightness-90"
+                style={{ background: accentColor }}
+              >
+                Apply Online
+              </a>
+            )}
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex-1 py-2.5 rounded-lg text-sm font-semibold border-2 transition-all duration-150 hover:bg-slate-50"
+              style={{ color: accentColor, borderColor: accentColor }}
+            >
+              Learn More
+            </button>
+          </div>
+        </div>
+      </article>
+
+      {showModal && (
+        <SchemeDetailsModal
+          scheme={scheme}
+          accentColor={accentColor}
+          accentBg={accentBg}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+    </>
   );
 }
