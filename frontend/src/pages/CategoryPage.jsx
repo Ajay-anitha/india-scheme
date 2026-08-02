@@ -20,7 +20,26 @@ export default function CategoryPage() {
       setError(null);
       try {
         const data = await fetchSchemes(category.searchQuery);
-        setSchemes(data.schemes || []);
+        const fetched = data.schemes || [];
+        
+        const sq = (category.searchQuery || '').toLowerCase();
+        const slug = (category.slug || '').toLowerCase();
+
+        const filtered = fetched.filter(s => {
+          const text = `${s.category || ''} ${s.scheme_name || ''} ${s.benefits || ''} ${s.eligibility || ''} ${s.occupation || ''}`.toLowerCase();
+          if (text.includes(sq) || text.includes(slug)) return true;
+          if (slug.includes('agri') && (text.includes('kisan') || text.includes('farmer') || text.includes('farm') || text.includes('solar'))) return true;
+          if (slug.includes('health') && (text.includes('medical') || text.includes('ayushman') || text.includes('hospital') || text.includes('insurance'))) return true;
+          if (slug.includes('finan') && (text.includes('loan') || text.includes('mudra') || text.includes('credit') || text.includes('micro'))) return true;
+          if ((slug.includes('edu') || slug.includes('stud')) && (text.includes('scholarship') || text.includes('stipend') || text.includes('school') || text.includes('student'))) return true;
+          if (slug.includes('hous') && (text.includes('awas') || text.includes('home') || text.includes('house') || text.includes('shelter'))) return true;
+          if (slug.includes('women') && (text.includes('mahila') || text.includes('girl') || text.includes('female') || text.includes('maternal'))) return true;
+          if (slug.includes('employ') && (text.includes('job') || text.includes('skill') || text.includes('kaushal') || text.includes('apprenticeship'))) return true;
+          if (slug.includes('senior') && (text.includes('pension') || text.includes('elderly') || text.includes('vaya') || text.includes('old age'))) return true;
+          return false;
+        });
+
+        setSchemes(filtered.length > 0 ? filtered : fetched);
       } catch {
         setError('Unable to fetch category schemes. Ensure the backend FastAPI server is running.');
       } finally {

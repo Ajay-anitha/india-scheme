@@ -55,8 +55,15 @@ def list_schemes(q: str = Query(None, description="Search term for scheme name, 
 
 @app.get("/schemes/suggest")
 def suggest_schemes(q: str = Query("", description="Query prefix for autocomplete suggestions")):
-    suggestions = get_scheme_suggestions(query=q, limit=6)
-    return {"status": "success", "suggestions": suggestions}
+    res = get_scheme_suggestions(query=q, limit=6)
+    if isinstance(res, dict):
+        return {
+            "status": "success",
+            "query": q,
+            "corrected_query": res.get("corrected_query", ""),
+            "suggestions": res.get("suggestions", [])
+        }
+    return {"status": "success", "suggestions": res}
 
 @app.get("/scheme/{scheme_id}")
 def get_scheme(scheme_id: int):
@@ -106,7 +113,20 @@ def check_eligibility(payload: EligibilityRequest):
         "schemes": matched_schemes
     }
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("backend.chat")
+
 from starlette.requests import Request
+
+def is_valid_gemini_key(key: str) -> bool:
+    if not key or len(key.strip()) < 15:
+        return False
+    k = key.strip().lower()
+    if k.startswith("your_") or k.startswith("aq."):
+        return False
+    return True
 
 def resolve_gemini_key(request: Request = None):
     # 1. Header resolution from request
@@ -115,15 +135,18 @@ def resolve_gemini_key(request: Request = None):
         if header_key:
             if header_key.lower().startswith("bearer "):
                 header_key = header_key[7:].strip()
-            if header_key and not header_key.lower().startswith("your_"):
+            if is_valid_gemini_key(header_key):
+                logger.info(f"Resolved Gemini API key from request header (prefix: {header_key[:8]}...)")
                 return header_key.strip()
 
     # 2. Environment variables resolution
-    for env_var in ["GEMINI_API_KEY", "VITE_GEMINI_API_KEY"]:
+    for env_var in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "VITE_GEMINI_API_KEY"]:
         val = os.getenv(env_var)
-        if val and not val.lower().startswith("your_"):
+        if is_valid_gemini_key(val):
+            logger.info(f"Resolved Gemini API key from environment variable '{env_var}' (prefix: {val[:8]}...)")
             return val.strip()
 
+    logger.info("No external Gemini API key resolved. Active local intent engine will serve chat responses.")
     return None
 
 @app.post("/chat", response_model=ChatResponse)
@@ -185,7 +208,8 @@ def ai_chat(payload: ChatRequest, request: Request = None):
             system_prompt = (
                 "You are an expert AI Government Scheme Assistant for Indian Citizens.\n"
                 "Answer the user's question clearly, concisely, and accurately based on official government scheme data.\n"
-                "Format your answer using clean markdown with headings, bullet points, and official apply links.\n"
+                "If the user greets you (e.g. 'Hello', 'Hi', 'Good Morning'), respond with a warm, conversational, friendly greeting and ask how you can assist them with Indian government schemes.\n"
+                "Format your answers using clean markdown with headings, bullet points, and official apply links where applicable.\n"
             )
             
             prompt = (
@@ -197,26 +221,70 @@ def ai_chat(payload: ChatRequest, request: Request = None):
             try:
                 genai = importlib.import_module("google.genai")
                 client = genai.Client(api_key=gemini_key)
+                logger.info("Initializing google.genai Client...")
                 
-                for model_name in ["gemini-2.0-flash", "gemini-1.5-flash", "gemini-pro"]:
+                # Candidate model hierarchy: prioritize active flash-latest models, then fallback variants
+                gemini_models = ["gemini-flash-latest", "gemini-flash-lite-latest", "gemini-2.0-flash-lite", "gemini-2.0-flash"]
+                
+                for model_name in gemini_models:
                     try:
+                        logger.info(f"Calling Gemini API with model '{model_name}'...")
                         response = client.models.generate_content(
                             model=model_name,
                             contents=prompt
                         )
                         if response and response.text:
+                            logger.info(f"Gemini API SUCCESS with model '{model_name}'! Generated {len(response.text)} chars.")
                             return ChatResponse(reply=response.text, schemes_mentioned=context_schemes[:3])
-                    except Exception:
+                    except Exception as model_err:
+                        err_str = str(model_err)
+                        logger.error(f"[GEMINI API ERROR] Model '{model_name}' failed: {err_str}")
+                        # Continue trying the remaining candidate models instead of breaking
                         continue
-            except Exception:
-                genai = importlib.import_module("google.generativeai")
-                genai.configure(api_key=gemini_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                response = model.generate_content(prompt)
-                if response and response.text:
-                    return ChatResponse(reply=response.text, schemes_mentioned=context_schemes[:3])
+            except Exception as sdk_err:
+                logger.error(f"[GEMINI SDK ERROR] google.genai Client exception: {sdk_err}")
+                try:
+                    genai = importlib.import_module("google.generativeai")
+                    genai.configure(api_key=gemini_key)
+                    for legacy_model in ["gemini-1.5-flash", "gemini-pro"]:
+                        try:
+                            model = genai.GenerativeModel(legacy_model)
+                            logger.info(f"Calling legacy google.generativeai model '{legacy_model}'...")
+                            response = model.generate_content(prompt)
+                            if response and response.text:
+                                logger.info(f"Legacy google.generativeai SUCCESS with '{legacy_model}'!")
+                                return ChatResponse(reply=response.text, schemes_mentioned=context_schemes[:3])
+                        except Exception as leg_mod_err:
+                            logger.error(f"[LEGACY GEMINI ERROR] Model '{legacy_model}' failed: {leg_mod_err}")
+                except Exception as legacy_err:
+                    logger.error(f"[LEGACY GEMINI SDK ERROR]: {legacy_err}")
+
+            # 3. Direct REST HTTP API Fallback for Gemini
+            try:
+                import requests
+                for rest_model in ["gemini-1.5-flash", "gemini-2.0-flash", "gemini-1.5-pro"]:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{rest_model}:generateContent?key={gemini_key}"
+                    res = requests.post(
+                        url,
+                        json={"contents": [{"parts": [{"text": prompt}]}]},
+                        headers={"Content-Type": "application/json"},
+                        timeout=12
+                    )
+                    if res.status_code == 200:
+                        data = res.json()
+                        candidates = data.get("candidates", [])
+                        if candidates and "content" in candidates[0]:
+                            parts = candidates[0]["content"].get("parts", [])
+                            if parts and "text" in parts[0]:
+                                text_resp = parts[0]["text"]
+                                logger.info(f"Gemini REST API SUCCESS with '{rest_model}'!")
+                                return ChatResponse(reply=text_resp, schemes_mentioned=context_schemes[:3])
+            except Exception as rest_err:
+                logger.error(f"[GEMINI REST ERROR]: {rest_err}")
         except Exception as e:
-            print(f"Gemini API Exception: {e}")
+            logger.error(f"[GEMINI TOP-LEVEL EXCEPTION]: {e}")
+
+    logger.warning("[FALLBACK TRIGGERED] Gemini API unavailable or failed all candidate models. Falling back to local intent engine.")
 
     # 2. OpenAI API Integration if key present
     if openai_key and not openai_key.lower().startswith("your_"):
@@ -239,11 +307,23 @@ def ai_chat(payload: ChatRequest, request: Request = None):
                 reply = data["choices"][0]["message"]["content"]
                 return ChatResponse(reply=reply, schemes_mentioned=context_schemes[:3])
         except Exception as e:
-            print(f"OpenAI API Error: {e}")
+            logger.error(f"OpenAI API Error: {e}")
 
     # 3. Intent-Aware Database Knowledge Fallback
+    logger.info("Using Intent-Aware Scheme Knowledge Engine for chat reply.")
+    q_lower = raw_query.lower().strip()
+
+    # Check for Greetings (Hello, Hi, Good morning, etc.)
+    q_clean = q_lower.strip(" !.,?😊🙏")
+    greetings = ["hello", "hi", "hey", "good morning", "good afternoon", "good evening", "namaste", "greetings", "hi there", "hello there"]
+    if any(q_clean == g or q_clean.startswith(g + " ") or q_clean.startswith(g + ",") for g in greetings):
+        reply = (
+            "Namaste! 🙏 Welcome to the AI Government Scheme Assistant.\n\n"
+            "How can I help you today? You can ask me any question about Indian Government schemes (such as PM-Kisan, Ayushman Bharat, PM MUDRA Yojana, Sukanya Samriddhi Yojana), check scheme eligibility criteria, or find out how to apply!"
+        )
+        return ChatResponse(reply=reply, schemes_mentioned=context_schemes[:3])
+
     top_scheme = context_schemes[0] if context_schemes else None
-    q_lower = raw_query.lower()
 
     if top_scheme:
         if any(w in q_lower for w in ["benefit", "benefits", "advantage", "get"]):
@@ -291,8 +371,22 @@ def ai_chat(payload: ChatRequest, request: Request = None):
 
     return ChatResponse(reply=reply, schemes_mentioned=context_schemes[:3])
 
+@app.post("/admin/import-schemes")
+def import_official_schemes():
+    """Administrative endpoint to trigger the automated official scheme import pipeline."""
+    try:
+        from importer import OfficialSchemeImporter
+        importer = OfficialSchemeImporter()
+        report = importer.run_import()
+        return {"success": True, "report": report}
+    except Exception as e:
+        logger.error(f"Import endpoint error: {e}")
+        raise HTTPException(status_code=500, detail=f"Import failed: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     host = os.getenv("HOST") or os.getenv("API_HOST") or "127.0.0.1"
     port = int(os.getenv("PORT") or os.getenv("API_PORT") or 8000)
-    uvicorn.run("main:app", host=host, port=port, reload=True)
+    uvicorn.run(app, host=host, port=port)

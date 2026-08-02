@@ -44,7 +44,7 @@ export default function Footer() {
                 <Link to="/" className="text-slate-600 hover:text-[#1e3a8a] transition-colors">Home Directory</Link>
               </li>
               <li>
-                <Link to="/about" className="text-slate-600 hover:text-[#1e3a8a] transition-colors">About Portal</Link>
+                <Link to="/eligibility" className="text-slate-600 hover:text-[#1e3a8a] transition-colors">Eligibility Calculator</Link>
               </li>
               <li>
                 <Link to="/contact" className="text-slate-600 hover:text-[#1e3a8a] transition-colors">Contact Helpdesk</Link>

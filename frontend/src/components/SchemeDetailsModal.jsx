@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { formatIncomeDisplay, formatAgeDisplay } from '../utils/formatters';
 
 /**
  * Full-details modal for a government scheme.
@@ -21,9 +22,9 @@ export default function SchemeDetailsModal({ scheme, accentColor, accentBg, onCl
   const meta = [
     { label: 'State / Region', value: scheme.state || 'All India' },
     { label: 'Target Occupation', value: scheme.occupation || 'All' },
-    { label: 'Age Range', value: scheme.min_age || scheme.max_age ? `${scheme.min_age ?? 0} – ${scheme.max_age ?? '∞'} years` : 'Any' },
+    { label: 'Age Range', value: formatAgeDisplay(scheme.min_age, scheme.max_age) },
     { label: 'Category', value: scheme.category || 'All' },
-    { label: 'Income Limit', value: (scheme.max_income && scheme.max_income < 10000000) ? `₹${Number(scheme.max_income).toLocaleString('en-IN')}` : 'No upper limit' },
+    { label: 'Income Limit', value: formatIncomeDisplay(scheme.max_income, scheme.eligibility) },
   ];
 
   return (

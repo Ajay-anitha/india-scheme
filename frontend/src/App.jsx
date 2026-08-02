@@ -8,7 +8,6 @@ import CategoryEligibilityPage from './pages/CategoryEligibilityPage';
 import SearchResultsPage from './pages/SearchResultsPage';
 import SchemeDetailPage from './pages/SchemeDetailPage';
 import EligibilityPage from './pages/EligibilityPage';
-import AboutPage from './pages/AboutPage';
 import ContactPage from './pages/ContactPage';
 
 export default function App() {
@@ -25,7 +24,6 @@ export default function App() {
             <Route path="/eligibility" element={<EligibilityPage />} />
             <Route path="/category/:slug" element={<CategoryPage />} />
             <Route path="/category/:slug/eligibility" element={<CategoryEligibilityPage />} />
-            <Route path="/about" element={<AboutPage />} />
             <Route path="/contact" element={<ContactPage />} />
           </Routes>
         </main>

@@ -7,7 +7,8 @@ echo.
 echo ===================================================
 echo  AI Government Scheme Assistant is starting!
 echo ===================================================
-echo  Frontend UI:  http://localhost:5173
-echo  Backend API:   http://127.0.0.1:8000
-echo  Swagger Docs:  http://127.0.0.1:8000/docs
+echo  Opening browser at http://localhost:5173 ...
 echo ===================================================
+timeout /t 3 /nobreak >nul
+start http://localhost:5173
+

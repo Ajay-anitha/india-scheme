@@ -123,10 +123,13 @@ export default function AIAssistant({ categoryName }) {
         }
       }
 
-      // 2. Conversational Memory: If it's a follow-up query and activeScheme exists
-      if (isFollowUpQuery(query) && activeScheme) {
+      // 2. Conversational Memory: Retain activeScheme context for follow-ups or general questions
+      const queryLower = query.toLowerCase();
+      const mentionsNewScheme = ['pm-kisan', 'ayushman', 'mudra', 'sukanya', 'svanidhi', 'awas', 'nsap', 'vishwakarma', 'surya', 'ujjwala', 'kaushal', 'stand-up'].some(k => queryLower.includes(k));
+
+      if (activeScheme && !mentionsNewScheme) {
         payloadPrompt = `[Context Scheme: ${activeScheme.scheme_name}] ${query}`;
-      } else if (activeCategory && !activeScheme) {
+      } else if (activeCategory && !activeScheme && !mentionsNewScheme) {
         payloadPrompt = `[Context Category: ${activeCategory}] ${query}`;
       }
 
@@ -136,8 +139,8 @@ export default function AIAssistant({ categoryName }) {
 
       // Extract schemes mentioned from API response
       const schemesMentioned = data.schemes_mentioned || [];
-      if (schemesMentioned.length > 0) {
-        // Automatically retain the first scheme as active conversational context
+      if (schemesMentioned.length > 0 && (!activeScheme || mentionsNewScheme)) {
+        // Automatically retain the new scheme as active conversational context
         setActiveScheme(schemesMentioned[0]);
       }
 

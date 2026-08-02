@@ -108,14 +108,17 @@ export async function fetchSchemes(query = '') {
  * Fetch scheme search suggestions for dropdown autocomplete (GET /schemes/suggest?q=...)
  */
 export async function fetchSchemeSuggestions(query = '') {
-  if (!query || query.trim().length < 2) return [];
+  if (!query || query.trim().length < 1) return { suggestions: [], correctedQuery: '' };
   try {
     const res = await apiFetch(`/schemes/suggest?q=${encodeURIComponent(query.trim())}`);
     const data = await res.json();
-    return data.suggestions || [];
+    return {
+      suggestions: data.suggestions || [],
+      correctedQuery: data.corrected_query || ''
+    };
   } catch (err) {
     console.warn('Failed to fetch scheme suggestions:', err);
-    return [];
+    return { suggestions: [], correctedQuery: '' };
   }
 }
 

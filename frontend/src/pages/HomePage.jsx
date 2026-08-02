@@ -46,7 +46,7 @@ export default function HomePage() {
           <div className="mt-10 flex flex-wrap items-center justify-center gap-6 sm:gap-12 text-xs sm:text-sm font-bold text-blue-200/90">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>134+ Verified Schemes</span>
+              <span>87+ Verified Schemes</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-400" />

@@ -1,6 +1,8 @@
 import sqlite3
 import os
 import json
+import re
+from difflib import SequenceMatcher
 
 def get_db_path():
     db_url = os.getenv("DATABASE_URL")
@@ -37,9 +39,26 @@ def init_db():
         gender TEXT DEFAULT 'All',
         occupation TEXT DEFAULT 'All',
         max_income INTEGER DEFAULT 10000000,
-        category TEXT DEFAULT 'All'
+        category TEXT DEFAULT 'All',
+        official_page TEXT DEFAULT '',
+        helpline TEXT DEFAULT '',
+        last_updated TEXT DEFAULT '',
+        status TEXT DEFAULT 'Active'
     )
     """)
+
+    # Check and add new columns if upgrading existing table
+    cursor.execute("PRAGMA table_info(schemes)")
+    columns = [col[1] for col in cursor.fetchall()]
+    if "official_page" not in columns:
+        cursor.execute("ALTER TABLE schemes ADD COLUMN official_page TEXT DEFAULT '';")
+    if "helpline" not in columns:
+        cursor.execute("ALTER TABLE schemes ADD COLUMN helpline TEXT DEFAULT '';")
+    if "last_updated" not in columns:
+        cursor.execute("ALTER TABLE schemes ADD COLUMN last_updated TEXT DEFAULT '';")
+    if "status" not in columns:
+        cursor.execute("ALTER TABLE schemes ADD COLUMN status TEXT DEFAULT 'Active';")
+
     cursor.execute("""
     CREATE INDEX IF NOT EXISTS idx_scheme_name ON schemes(scheme_name);
     """)
@@ -52,35 +71,103 @@ STOP_WORDS = {
 }
 
 SYNONYMS = {
-    'kisan': ['farmer', 'farming', 'agriculture', 'kisan'],
-    'kisaan': ['farmer', 'farming', 'agriculture', 'kisan'],
-    'farmer': ['kisan', 'farming', 'agriculture', 'farmer'],
+    'kisan': ['farmer', 'farming', 'agriculture', 'kisan', 'krishi', 'pm-kisan'],
+    'kisaan': ['farmer', 'farming', 'agriculture', 'kisan', 'krishi'],
+    'farmer': ['kisan', 'farming', 'agriculture', 'farmer', 'krishi'],
     'farmers': ['kisan', 'farmer', 'agriculture', 'farming'],
-    'agri': ['agriculture', 'farmer', 'kisan'],
-    'agriculture': ['farmer', 'kisan', 'agriculture'],
-    'loan': ['credit', 'financial assistance', 'subsidy', 'mudra', 'loan', 'grant'],
-    'scholarship': ['education', 'student', 'stipend', 'fellowship', 'scholarship'],
+    'agri': ['agriculture', 'farmer', 'kisan', 'krishi'],
+    'agriculture': ['farmer', 'kisan', 'agriculture', 'krishi'],
+    'loan': ['credit', 'financial assistance', 'subsidy', 'mudra', 'loan', 'grant', 'pmmy', 'svanidhi'],
+    'mudra': ['mudra', 'loan', 'pmmy', 'business', 'entrepreneur'],
+    'scholarship': ['education', 'student', 'stipend', 'fellowship', 'scholarship', 'nmmss', 'post-matric'],
     'scholarships': ['education', 'student', 'stipend', 'fellowship', 'scholarship'],
-    'student': ['education', 'scholarship', 'study', 'student'],
+    'student': ['education', 'scholarship', 'study', 'student', 'fellowship'],
     'students': ['education', 'scholarship', 'study', 'student'],
-    'health': ['ayushman', 'medical', 'hospital', 'insurance', 'health', 'chiranjeevi'],
+    'health': ['ayushman', 'medical', 'hospital', 'insurance', 'health', 'chiranjeevi', 'pm-jay'],
     'medical': ['health', 'ayushman', 'hospital', 'medical'],
-    'pension': ['senior', 'elderly', 'old age', 'vaya', 'nsap', 'pension'],
+    'ayushman': ['ayushman', 'health', 'pm-jay', 'insurance', 'hospital'],
+    'pension': ['senior', 'elderly', 'old age', 'vaya', 'nsap', 'pension', 'apy', 'maan-dhan'],
     'pensions': ['senior', 'elderly', 'old age', 'vaya', 'nsap', 'pension'],
-    'senior': ['elderly', 'old age', 'pension', 'senior', 'vaya'],
+    'senior': ['elderly', 'old age', 'pension', 'senior', 'vaya', 'rvy'],
     'seniors': ['elderly', 'old age', 'pension', 'senior'],
-    'housing': ['awas', 'house', 'home', 'housing', 'shelter'],
-    'house': ['housing', 'awas', 'home'],
+    'housing': ['awas', 'house', 'home', 'housing', 'shelter', 'pmay'],
+    'house': ['housing', 'awas', 'home', 'pmay'],
     'home': ['housing', 'awas', 'home'],
-    'women': ['mahila', 'lady', 'girl', 'female', 'sukanya', 'women'],
+    'women': ['mahila', 'lady', 'girl', 'female', 'sukanya', 'women', 'ssy', 'bbbp', 'pmmvy'],
     'woman': ['mahila', 'lady', 'girl', 'female', 'women'],
-    'girl': ['women', 'mahila', 'sukanya', 'female', 'girl'],
-    'employment': ['job', 'skill', 'kaushal', 'rozgar', 'employment', 'work'],
+    'girl': ['women', 'mahila', 'sukanya', 'female', 'girl', 'beti'],
+    'employment': ['job', 'skill', 'kaushal', 'rozgar', 'employment', 'work', 'pmkvy', 'naps'],
     'job': ['employment', 'skill', 'work', 'job', 'placement'],
     'jobs': ['employment', 'skill', 'work', 'job']
 }
 
-import re
+# Misspelling & Typo Auto-Correction Dictionary
+TYPO_CORRECTIONS = {
+    'adrikultuare': 'agriculture',
+    'agriculutre': 'agriculture',
+    'agrikulture': 'agriculture',
+    'agri': 'agriculture',
+    'scholrship': 'scholarship',
+    'scholaship': 'scholarship',
+    'sholarship': 'scholarship',
+    'skolarship': 'scholarship',
+    'mudraa': 'mudra',
+    'mudra': 'mudra',
+    'ayushman': 'ayushman',
+    'ayusman': 'ayushman',
+    'ayushaman': 'ayushman',
+    'kisaan': 'kisan',
+    'awas': 'awas',
+    'aawas': 'awas',
+    'vishwakarma': 'vishwakarma',
+    'viswakarma': 'vishwakarma',
+    'surya': 'surya',
+    'soorya': 'surya',
+}
+
+CATEGORY_KEYWORDS = {
+    'student': [{'label': 'Student Category', 'slug': 'student'}, {'label': 'Student Schemes', 'slug': 'student'}],
+    'education': [{'label': 'Education Category', 'slug': 'education'}, {'label': 'Education & Scholarship Schemes', 'slug': 'education'}],
+    'scholarship': [{'label': 'Student Category', 'slug': 'student'}, {'label': 'Scholarship Schemes', 'slug': 'education'}],
+    'health': [{'label': 'Health Category', 'slug': 'health'}, {'label': 'Health & Medical Schemes', 'slug': 'health'}],
+    'medical': [{'label': 'Health Category', 'slug': 'health'}, {'label': 'Health Schemes', 'slug': 'health'}],
+    'agriculture': [{'label': 'Agriculture Category', 'slug': 'agriculture'}, {'label': 'Agriculture & Farmer Schemes', 'slug': 'agriculture'}],
+    'farmer': [{'label': 'Agriculture Category', 'slug': 'agriculture'}, {'label': 'Farmer Welfare Schemes', 'slug': 'agriculture'}],
+    'loan': [{'label': 'Financial Inclusion Category', 'slug': 'finance'}, {'label': 'Credit & Loan Schemes', 'slug': 'finance'}],
+    'housing': [{'label': 'Housing Category', 'slug': 'housing'}, {'label': 'Housing & Shelter Schemes', 'slug': 'housing'}],
+    'women': [{'label': 'Women & Child Welfare Category', 'slug': 'women'}, {'label': 'Women Schemes', 'slug': 'women'}],
+    'employment': [{'label': 'Employment Category', 'slug': 'employment'}, {'label': 'Skill & Training Schemes', 'slug': 'employment'}],
+    'senior': [{'label': 'Senior Citizen Support Category', 'slug': 'senior-citizen'}, {'label': 'Senior Pension Schemes', 'slug': 'senior-citizen'}],
+}
+
+def correct_query_terms(query: str) -> str:
+    """Auto-correct misspelled query terms using dictionary and fuzzy distance."""
+    if not query:
+        return ""
+    words = query.strip().lower().split()
+    corrected_words = []
+    
+    for w in words:
+        w_clean = re.sub(r'[^a-z0-9]', '', w)
+        if not w_clean:
+            continue
+            
+        if w_clean in TYPO_CORRECTIONS:
+            corrected_words.append(TYPO_CORRECTIONS[w_clean])
+            continue
+            
+        # Try fuzzy match against known dictionary keys
+        best_match = w
+        highest_ratio = 0.0
+        for target in list(TYPO_CORRECTIONS.keys()) + list(SYNONYMS.keys()):
+            ratio = SequenceMatcher(None, w_clean, target).ratio()
+            if ratio > highest_ratio and ratio >= 0.70:
+                highest_ratio = ratio
+                best_match = TYPO_CORRECTIONS.get(target, target)
+                
+        corrected_words.append(best_match)
+        
+    return " ".join(corrected_words) if corrected_words else query
 
 def get_all_schemes(search_query: str = None):
     conn = get_db_connection()
@@ -93,12 +180,20 @@ def get_all_schemes(search_query: str = None):
             return rows
 
         raw_query = search_query.strip().lower()
+        corrected_query = correct_query_terms(raw_query)
+
         norm_query = re.sub(r'[\-/_\,\.\(\)]+', ' ', raw_query)
         compact_query = re.sub(r'[\s\-/_\,\.\(\)]+', '', raw_query)
         
-        tokens = [t for t in norm_query.split() if t not in STOP_WORDS and len(t) > 1]
-        if not tokens:
-            tokens = [raw_query]
+        norm_corr = re.sub(r'[\-/_\,\.\(\)]+', ' ', corrected_query)
+        compact_corr = re.sub(r'[\s\-/_\,\.\(\)]+', '', corrected_query)
+        
+        query_tokens = [t for t in norm_query.split() if t not in STOP_WORDS and len(t) > 1]
+        corr_tokens = [t for t in norm_corr.split() if t not in STOP_WORDS and len(t) > 1]
+        
+        all_tokens = list(set(query_tokens + corr_tokens))
+        if not all_tokens:
+            all_tokens = [raw_query]
 
         scored = []
         for s in rows:
@@ -118,47 +213,70 @@ def get_all_schemes(search_query: str = None):
             full_text = f"{norm_name} {ministry} {eligibility} {benefits} {state} {occupation} {category} {req_docs}"
             compact_full = re.sub(r'[\s\-/_\,\.\(\)]+', '', full_text)
 
-            # 1. Exact or compact query matches
-            if norm_query in norm_name or compact_query in compact_name:
+            # 1. Exact or compact matches
+            if norm_query == norm_name or compact_query == compact_name or compact_corr == compact_name:
+                score += 250
+            elif norm_name.startswith(norm_query) or compact_name.startswith(compact_query) or compact_name.startswith(compact_corr):
+                score += 200
+            elif norm_query in norm_name or compact_query in compact_name or compact_corr in compact_name:
                 score += 150
-            elif norm_query in full_text or compact_query in compact_full:
-                score += 80
+            elif norm_query in full_text or compact_query in compact_full or compact_corr in compact_full:
+                score += 90
 
-            # 2. Token matches
+            # 2. Token & Fuzzy Token matches
             matched_tokens = 0
-            for t in tokens:
+            for t in all_tokens:
                 t_syns = SYNONYMS.get(t, [t])
                 t_matched = False
 
                 for syn in t_syns:
                     if syn in norm_name:
-                        score += 40
+                        score += 50
                         t_matched = True
-                    elif syn in ministry:
-                        score += 25
+                    elif syn in ministry or syn in category or syn in occupation or syn in state:
+                        score += 30
                         t_matched = True
-                    elif syn in occupation or syn in category or syn in state:
+                    elif syn in benefits or syn in eligibility or syn in req_docs:
                         score += 20
                         t_matched = True
-                    elif syn in benefits or syn in eligibility:
-                        score += 15
-                        t_matched = True
-                    elif syn in req_docs:
-                        score += 10
-                        t_matched = True
+
+                # Fuzzy token matching against name words
+                if not t_matched:
+                    name_words = norm_name.split()
+                    for nw in name_words:
+                        ratio = SequenceMatcher(None, t, nw).ratio()
+                        if ratio >= 0.70:
+                            score += int(40 * ratio)
+                            t_matched = True
+                            break
 
                 if t_matched:
                     matched_tokens += 1
 
-            # Bonus if all query tokens matched
-            if matched_tokens == len(tokens):
-                score += 50
+            if matched_tokens == len(all_tokens) and len(all_tokens) > 0:
+                score += 60
 
             if score > 0:
                 scored.append((score, s))
 
+        # Sort by relevance score descending
         scored.sort(key=lambda x: x[0], reverse=True)
-        return [item[1] for item in scored]
+        results = [item[1] for item in scored]
+
+        # 3. Intelligent Fallback if no direct score > 0
+        if not results:
+            fallback_scored = []
+            for s in rows:
+                name = s['scheme_name'].lower()
+                ratio = SequenceMatcher(None, corrected_query, name).ratio()
+                full_ratio = SequenceMatcher(None, raw_query, f"{name} {s['benefits']}").ratio()
+                max_r = max(ratio, full_ratio)
+                fallback_scored.append((max_r, s))
+                
+            fallback_scored.sort(key=lambda x: x[0], reverse=True)
+            results = [item[1] for item in fallback_scored[:6]]
+
+        return results
     finally:
         conn.close()
 
@@ -229,19 +347,53 @@ def check_eligibility_in_db(age: int = None, gender: str = None, state: str = No
     return matched
 
 def get_scheme_suggestions(query: str = "", limit: int = 6):
-    if not query or len(query.strip()) < 2:
-        return []
-    all_matched = get_all_schemes(query)
+    if not query or len(query.strip()) < 1:
+        return {"query": query, "corrected_query": "", "suggestions": []}
+
+    raw_query = query.strip().lower()
+    corrected_query = correct_query_terms(raw_query)
+    
+    matched_schemes = get_all_schemes(raw_query)
     suggestions = []
-    for s in all_matched[:limit]:
+
+    # 1. Category Suggestions for terms like 'student', 'health', 'agriculture', etc.
+    matched_cat_keys = []
+    for k, cat_list in CATEGORY_KEYWORDS.items():
+        if k in raw_query or k in corrected_query:
+            matched_cat_keys.extend(cat_list)
+        else:
+            ratio = SequenceMatcher(None, raw_query, k).ratio()
+            if ratio >= 0.70:
+                matched_cat_keys.extend(cat_list)
+
+    seen_cats = set()
+    for cat in matched_cat_keys:
+        if cat['label'] not in seen_cats:
+            seen_cats.add(cat['label'])
+            suggestions.append({
+                "type": "category",
+                "label": cat['label'],
+                "slug": cat['slug']
+            })
+
+    # 2. Scheme Suggestions
+    for s in matched_schemes:
+        if len(suggestions) >= limit:
+            break
         suggestions.append({
+            "type": "scheme",
             "id": s["id"],
             "scheme_name": s["scheme_name"],
             "ministry": s["ministry"],
             "category": s.get("category", "General"),
             "state": s.get("state", "All India")
         })
-    return suggestions
+
+    return {
+        "query": query,
+        "corrected_query": corrected_query if corrected_query != raw_query else "",
+        "suggestions": suggestions[:limit]
+    }
 
 def get_related_schemes(scheme_id: int, limit: int = 4):
     target = get_scheme_by_id(scheme_id)

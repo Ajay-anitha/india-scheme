@@ -10,7 +10,6 @@ export default function Navbar() {
   const navLinks = [
     { path: '/', label: 'Home' },
     { path: '/eligibility', label: 'Eligibility' },
-    { path: '/about', label: 'About' },
     { path: '/contact', label: 'Contact' },
   ];
 
